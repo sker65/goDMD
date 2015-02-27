@@ -1,4 +1,8 @@
-# todos
+# goDMD
+
+Firmware for den pinguino micro zum bau einer goDmd Uhr
+
+## todos
 - Temperatur anzeige
 - IR Fernbedienung
 - Ein Button Menü

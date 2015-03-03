@@ -227,6 +227,7 @@ Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc) :
 	active = false;
 	showSeconds = false;
 	lastRtcSync = 0;
+	isShowingDate = false;
 }
 
 Clock::~Clock() {
@@ -237,8 +238,8 @@ void Clock::setIsShowingDate(boolean isShowingDate ) {
 	this->isShowingDate = isShowingDate;
 }
 
-void Clock::adjust(DateTime& dt) {
-	rtc->adjust(dt);
+void Clock::adjust(DateTime* dt) {
+	rtc->adjust(*dt);
 	nextRtcSync = millis(); // force sync
 }
 

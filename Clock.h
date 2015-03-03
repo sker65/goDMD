@@ -27,7 +27,7 @@ public:
 	boolean isClockOn() {
 		return active;
 	}
-	void adjust(DateTime& dt);
+	void adjust(DateTime* dt);
 	DateTime& getActualTime();
 	void setShowSeconds(boolean show);
 

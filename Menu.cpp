@@ -63,7 +63,7 @@ const char* mmText[] = {
 
 Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd) :
 		panel( panel ), clock(clock), sd(sd)
-		,menuButton(PIN_BUT, BUTTON_MENU, this)
+		,menuButton(PIN_BTN1, BUTTON_MENU, this)
 		//,selButton(PIN_B2, BUTTON_SEL,this)
 		{
 
@@ -173,11 +173,13 @@ void Menu::saveOption() {
 	option[actMenu] = actOption;
 }
 
+#define OPTION_DAT "OPTION.DAT"
+
 void Menu::loadOptions() {
 
 	// load options from SD card
 	SdFile f;
-	if( f.open(SD.root, "/option.dat", O_READ) ) {
+	if( f.open(SD.root, OPTION_DAT, O_READ) ) {
 		f.read((void*)option, NMENU);
 		f.close();
 	}
@@ -271,12 +273,12 @@ void Menu::leaveMenu() {
 				option[SET_TIME_HOURS],
 				option[SET_TIME_TENMIN]*10+option[SET_TIME_ONEMIN]
 				);
-		clock->adjust(dt);
+		clock->adjust(&dt);
 		clockDirty = false;
 	}
 
 	SdFile f;
-	if( f.open(SD.root, "/option.dat", O_CREAT|O_WRITE) ) {
+	if( f.open(SD.root, OPTION_DAT, O_CREAT|O_WRITE) ) {
 		f.write((void*)option, NMENU);
 		f.close();
 	}

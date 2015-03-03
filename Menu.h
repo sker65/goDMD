@@ -13,6 +13,7 @@
 #include "Button.h"
 #include "ClickHandler.h"
 
+
 // not on pic micro #define PIN_B1 3
 // not on PIC micro #define PIN_B2 5
 
@@ -41,6 +42,12 @@
 #define EEPROM_END 13
 
 #define NMENU 14
+
+#define PIR_INACTIVE 0
+#define PIR_DIM 1
+#define PIR_NOANI 2
+#define PIR_SWITCHOFF 3
+
 
 class SDClass;
 

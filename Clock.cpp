@@ -6,12 +6,17 @@
  */
 
 #include "Clock.h"
+#include "LEDMatrixPanel.h"
+#include "DallasTemperature.h"
+#include "debug.h"
+#include <SD.h>
+
 
 TimeSpan onesec(1);
-#include "LEDMatrixPanel.h"
 
 #define maxBrightness 2
 
+/*
 const byte clockMask[13][64] =
 		{
 
@@ -219,23 +224,63 @@ const byte clockDigits[13][64] =
 						0xFF, 0xFF, 0xFF, 0xFF, },
 
 		};
+*/
 
-Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc) :
-		panel(p), nextClockRefresh(0), nextRtcSync(0) {
+Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc, SDClass* sd,
+		DallasTemperature* sensor) :
+		panel(p), nextClockRefresh(0), nextRtcSync(0), nextTempSync(0),
+		actTemp(0.0),
+		sd(sd), sensor(sensor) {
 	this->rtc = &rtc;
 	brightness = 0;
 	active = false;
-	showSeconds = false;
+	mode = TIME;
 	lastRtcSync = 0;
-	isShowingDate = false;
+	digits = 0L;
 }
 
 Clock::~Clock() {
 }
 
-void Clock::setIsShowingDate(boolean isShowingDate ) {
-	if( this->isShowingDate && !isShowingDate ) panel.clearTime();
-	this->isShowingDate = isShowingDate;
+boolean Clock::begin() {
+	File f = sd->open("font.dat");
+	if( !f ) return false;
+	DPRINTF("reading font.dat\n");
+	// size of map -> how many chars
+	int j = 0;
+	uint8_t size = f.read();
+	digits = (Digit*)malloc(sizeof(Digit)*size);
+	while(size-- > 0) {
+		f.read(); // ignore char
+		digits[j].width = f.read()*256+f.read();
+		digits[j].height = f.read()*256+f.read();
+		digits[j].sizeInBytes = f.read()*256+f.read();
+		// create struct for font data
+		digits[j].data = (byte*)malloc(digits[j].sizeInBytes);
+		f.read(digits[j].data,digits[j].sizeInBytes);
+		// frame2 überlesen
+		for(int k = 0;k < digits[j].sizeInBytes;k++) f.read();
+		j++;
+	}
+	// now read mask
+	j = 0;
+	size = f.read();
+	while(size-- > 0) {
+		f.read(); // ignore char
+		f.seekCur(6);
+		digits[j].mask = (byte*)malloc(digits[j].sizeInBytes);
+		f.read(digits[j].data,digits[j].sizeInBytes);
+		// frame2 überlesen
+		for(int k = 0;k < digits[j].sizeInBytes;k++) f.read();
+		j++;
+	}
+	f.close();
+	return true;
+}
+
+void Clock::setMode( Mode newMode ) {
+	if( this->mode != newMode ) panel.clearTime();
+	this->mode = newMode;
 }
 
 void Clock::adjust(DateTime* dt) {
@@ -255,10 +300,22 @@ void Clock::update(long now) {
 	}
 	if (nextClockRefresh < now) {
 		nextClockRefresh = now + 500;
-		if( isShowingDate ) {
-			writeDate(now);
-		} else {
+		switch (mode) {
+		case TIME:
+		case TIMESEC:
 			writeTime(now);
+			break;
+		case DATE:
+			writeDate(now);
+			break;
+		case TEMP:
+			if( nextTempSync < now ) {
+				sensor->requestTemperaturesByIndex(0);
+				actTemp= sensor->getTempCByIndex(0);
+				nextTempSync = now + 20 * 1000L; // every 20 sec
+			}
+			writeTemp(actTemp);
+			break;
 		}
 		// by forcing updates max bright is reached faster
 		if (brightness < maxBrightness) {
@@ -269,14 +326,11 @@ void Clock::update(long now) {
 	}
 }
 
-void Clock::setShowSeconds(boolean show) {
-	this->showSeconds = show;
-}
+#define DIGITS "0123456789: .C°"
 
-// todo use smaller colons : / dots . space
 void Clock::writeDigit(int digit, int xoffset, uint8_t nBytes, byte* buffer) {
 	if (buffer == NULL) {
-		const byte* src = clockDigits[digit];
+		byte* src = digits[digit].data;
 		for (int row = 0; row < 16; row++) {
 			uint8_t* ptr = panel.getBuffers()[2] + row * panel.getWidth() / 4
 					+ xoffset;
@@ -285,7 +339,7 @@ void Clock::writeDigit(int digit, int xoffset, uint8_t nBytes, byte* buffer) {
 			}
 		}
 	} else {
-		const byte* src = clockMask[digit];
+		byte* src = digits[digit].mask;
 		for (int row = 0; row < 16; row++) {
 			uint8_t* p1 = buffer + row * panel.getWidth() / 4 + xoffset;
 			for (int p = 0; p < nBytes; p++) {
@@ -293,6 +347,19 @@ void Clock::writeDigit(int digit, int xoffset, uint8_t nBytes, byte* buffer) {
 				*p1++ = v | ~(*src++);
 			}
 		}
+	}
+}
+
+void Clock::writeText(char* text, int offset, byte* buffer) {
+	char*p = text;
+	int x = offset;
+	while(*p) {
+		char* q = strchr(DIGITS,*p);
+		if( q ) {
+			// breite in bytes = digits[q-p].width / 4;
+			writeDigit(q-p,x,4,buffer);
+		}
+		p++;
 	}
 }
 
@@ -306,6 +373,12 @@ int Clock::writeDoubleDigit(int digit, int x, byte* buffer) {
 	writeDigit(digit % 10, x, 4, buffer);
 	x += 4;
 	return x;
+}
+
+void Clock::writeTemp(float actTemp, byte* buffer) {
+	char buf[7];
+	sprintf(buf, "%03.1f °C",actTemp);
+	writeText(buf,3,buffer);
 }
 
 void Clock::writeDate(long now, byte* buffer) {
@@ -328,14 +401,14 @@ void Clock::writeTime(long now, byte* buffer) {
 		boolean tick = (now % 1000) > 500;
 
 		// choose offset
-		int x = showSeconds ? 3 : 6; // for no seconds
+		int x = (mode==TIMESEC) ? 3 : 6; // for no seconds
 
 		x = writeDoubleDigit(dateTime.hour(),x,buffer);
 		// the colon
 		writeDigit(tick ? 10 : 11, x, 2, buffer);
 		x += 2;
 		x = writeDoubleDigit(dateTime.minute(),x,buffer);
-		if (showSeconds) {
+		if (mode==TIMESEC) {
 		// the colon
 			writeDigit(tick ? 10 : 11, x, 2, buffer);
 			x += 2;

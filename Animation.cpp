@@ -6,6 +6,7 @@
  */
 
 #include "Animation.h"
+#include "debug.h"
 
 
 Animation::Animation(SDClass& sd, LEDMatrixPanel& panel, Clock& clock) :
@@ -25,10 +26,10 @@ boolean Animation::begin() {
 	ani.seekCur(4);
 	// read 2 byte version (1)
 	uint16_t version = ani.read()*256+ani.read();
-	printf("version: %d\n",version);
+	DPRINTF("version: %d\n",version);
 	// read number of anis
 	numberOfAnimations  = ani.read()*256+ani.read();
-	printf("number of animations: %d\n",numberOfAnimations);
+	DPRINTF("number of animations: %d\n",numberOfAnimations);
 	// pos is now 8
 	return true;
 }
@@ -40,7 +41,7 @@ void readString(File& f) {
 		name[i] = f.read();
 	}
 	name[len] = '\0';
-	printf("name: %s\n",name);
+	DPRINTF("name: %s\n",name);
 }
 
 void Animation::readNextAnimation() {
@@ -48,15 +49,15 @@ void Animation::readNextAnimation() {
 	readString(ani);
 	// cycles 2
 	cycles = ani.read()*256+ani.read();
-	printf("cycles: %d\n",cycles);
+	DPRINTF("cycles: %d\n",cycles);
 	// hold cycles 2
 	holdCycles = ani.read()*256+ani.read();
-	printf("hold: %d\n", hold);
+	DPRINTF("hold: %d\n", hold);
 
 	// clock from 2
 	clockFrom = ani.read()*256+ani.read();
 	//clockFrom = 5;
-	printf("clockFrom: %d\n",clockFrom);
+	DPRINTF("clockFrom: %d\n",clockFrom);
 	// clock small (1 Byte)
 	ani.read();
 	// clock in front (1 Byte)
@@ -65,13 +66,13 @@ void Animation::readNextAnimation() {
 	// clock x / y offset je 2
 	// refresh delay 2
 	refreshDelay = ani.read()*256+ani.read();
-	printf("refreshDelay: %d\n",refreshDelay);
+	DPRINTF("refreshDelay: %d\n",refreshDelay);
 	// type (1 Byte)
 	ani.seekCur(1);
 	// 14 Byte insgesamt
 	// frameset count
 	numberOfFrames = ani.read()*256+ani.read();
-	printf("number of frames: %d\n",numberOfFrames);
+	DPRINTF("number of frames: %d\n",numberOfFrames);
 	actFrame = 0;
 	actAnimation++;
 }

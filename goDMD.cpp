@@ -16,6 +16,7 @@
 #include "Clock.h"
 #include "Animation.h"
 #include "Menu.h"
+#include "debug.h"
 
 #define DS18B20_PIN CON2_1
 
@@ -39,15 +40,15 @@
 
 LEDMatrixPanel panel( A,B,C,D, CLK, LAT, OE, WIDTH, HEIGHT, PLANES, COLORCHANNELS);
 
+OneWire oneWire(DS18B20_PIN);          // OneWire Referenz setzen
+DallasTemperature sensor(&oneWire);   // DS18B20 initialisieren
 RTC_DS1307 rtc;
-Clock clock(panel, rtc);
-Menu menu(&panel, &clock,&SD);
+
+Clock clock(panel, rtc, &SD, &sensor);
+Menu menu(&panel, &clock, &SD);
 
 IRrecv irrecv(RECV_PIN);
 decode_results results;
-
-OneWire oneWire(DS18B20_PIN);          // OneWire Referenz setzen
-DallasTemperature sensors(&oneWire);   // DS18B20 initialisieren
 
 Animation animation(SD, panel, clock);
 
@@ -78,33 +79,41 @@ void setup() {
 	irrecv.enableIRIn();
 	
 	panel.println(VERSION);
-	Serial.println("calling wire begin");
+	DPRINTF("calling wire begin\n");
 	panel.println("start wire ..");
 	Wire.begin();
-	Serial.println("calling rtc begin");
+	DPRINTF("calling rtc begin\n");
 	panel.println("start rtc ..");
 	rtc.begin();
 	
 	pinMode(INTERNAL_SD_SELECT, OUTPUT);
-	Serial.println("calling sd card begin");
+	DPRINTF("calling sd card begin\n");
 	panel.println("start sd card ..");
 
 	if( !SD.begin(INTERNAL_SD_SELECT) ){
-		Serial.println("sd card begin failed");
+		DPRINTF("sd card begin failed\n");
 		panel.println("sd card failed");
 		delay(12000);
 	} else {
-		Serial.println("sd card begin success");
+		DPRINTF("sd card begin success\n");
 		delay(500);
 		panel.println("boot ok!");
 		panel.println("(c)2015 by Steve");
 	}
 
 	if( !animation.begin() ) {
-		panel.println("init anis failed");
+		panel.println("init anis fail");
 		panel.println("*.ani not found");
 	}
 	
+	if( !clock.begin() ) {
+		panel.println("init clock fail");
+		panel.println("font not found");
+	}
+
+	sensor.begin();
+	DPRINTF("sensors found: %d\n",sensor.getDeviceCount());
+
 	pinMode(PIR_PIN,OUTPUT);
 
 	delay(1000);
@@ -124,9 +133,9 @@ void reloadConfig() {
 	panel.setTimeColor(menu.getOption(SET_COLOR_CLOCK));
 	panel.setBrightness(menu.getOption(SET_BRIGHTNESS));
 #ifdef _DEBUG
-	Serial.print("set time mode: ");Serial.println(menu.getOption(SET_TIME_MODE));
+	printf("set time mode: %d\n", menu.getOption(SET_TIME_MODE));
 #endif
-	clock.setShowSeconds(menu.getOption(SET_TIME_MODE)==1);
+	clock.setMode(menu.getOption(SET_TIME_MODE)==1?Clock::TIMESEC:Clock::TIME);
 	clockShowTime = 1500 * (menu.getOption(SET_TIME_DURATION)+1);
 	dateMode = menu.getOption(SET_DATE_MODE);
 
@@ -204,7 +213,7 @@ void loop() {
 			}
 			if( dateMode==1 && now > switchToDate ) {
 				state = showDate;
-				clock.setIsShowingDate(true);
+				clock.setMode(Clock::DATE);
 				switchToTime = now + 2000; // viewing duration date
 			}
 			clock.update(now);
@@ -216,7 +225,7 @@ void loop() {
 			}
 			if( now > switchToTime ) {
 				switchToDate = switchToAni + 20000; // weit weg
-				clock.setIsShowingDate(false);
+				clock.setMode(menu.getOption(SET_TIME_MODE)==1?Clock::TIMESEC:Clock::TIME);
 				state = showTime;
 			}
 			clock.update(now);

@@ -27,6 +27,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>libraries/DSPI</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/.uecide/cores/chipKIT/libraries/DSPI</locationURI>
+		</link>
+		<link>
 			<name>libraries/DallasTemperature</name>
 			<type>2</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Documents/UECIDE/libraries/DallasTemperature</locationURI>

@@ -242,34 +242,32 @@ Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc, SDClass* sd,
 Clock::~Clock() {
 }
 
-void Clock::readFont(File* f, Digit* digits, int _size) {
+void Clock::readFont(File* f, Digit* p, int _size) {
 	int j = 0;
 	int size = _size;
 	while(size-- > 0) {
-		f->read(); // ignore char
-		digits[j].width = f->read()*256+f->read();
-		digits[j].height = f->read()*256+f->read();
-		digits[j].sizeInBytes = f->read()*256+f->read();
+		int ch = f->read(); // ignore char
+		p[j].width = f->read();
+		p[j].height = f->read();
+		p[j].sizeInBytes = f->read()*256+f->read();
+		DPRINTF("reading char '%c': w:%d, h:%d, bytes:%d\n",
+				ch,p[j].width,p[j].height,p[j].sizeInBytes);
 		// create struct for font data
-		digits[j].data = (byte*)malloc(digits[j].sizeInBytes);
-		f->read(digits[j].data,digits[j].sizeInBytes);
-		// frame2 überlesen
-		for(int k = 0;k < digits[j].sizeInBytes;k++) f->read();
+		p[j].data = (byte*)malloc(p[j].sizeInBytes);
+		f->read(p[j].data,p[j].sizeInBytes);
 		j++;
 	}
 	// now read mask
 	j = 0;
 	size = f->read();
 	if( _size != size ) {
-		DPRINTF("size of mask does not match data!!");
+		DPRINTF("size of mask does not match data!!\n");
 	}
 	while(size-- > 0) {
 		f->read(); // ignore char
-		f->seekCur(6); // skip dimensions
-		digits[j].mask = (byte*)malloc(digits[j].sizeInBytes);
-		f->read(digits[j].data,digits[j].sizeInBytes);
-		// frame2 überlesen
-		for(int k = 0;k < digits[j].sizeInBytes;k++) f->read();
+		f->seekCur(4); // skip dimensions
+		p[j].mask = (byte*)malloc(p[j].sizeInBytes);
+		f->read(p[j].mask,p[j].sizeInBytes);
 		j++;
 	}
 

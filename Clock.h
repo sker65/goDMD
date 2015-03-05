@@ -14,6 +14,7 @@
 
 class LEDMatrixPanel;
 class SDClass;
+class File;
 class DallasTemperature;
 
 struct Digit {
@@ -23,8 +24,6 @@ struct Digit {
 	byte* data;
 	byte* mask;
 };
-
-
 
 class Clock {
 public:
@@ -57,11 +56,12 @@ public:
 	Mode getMode() const { return mode; }
 
 protected:
-
+	void readFont(File* f, Digit* d, int size);
 	void writeDigit(int digit, int xoffset, uint8_t nBytes, byte* buffer = NULL);
 	int writeDoubleDigit(int digit, int x, byte* buffer);
 
 	Digit* digits;
+	Digit* smallDigits;
 
 	RTC_DS1307* rtc;
 	SDClass* sd;

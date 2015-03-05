@@ -70,7 +70,13 @@ extern "C"
 
 void setup() {
 	Serial.begin(9600);
-	Serial.println("calling panel begin");
+#ifdef _DEBUG
+	for( int i =0; i<5;i++) {
+		DPRINTF("wait %lu \n", millis());
+		delay(1000);
+	}
+#endif
+	DPRINTF("calling panel begin");
 	panel.begin();
 
 	panel.setAnimationColor(1);
@@ -179,6 +185,8 @@ void loop() {
 
 	while(true) {
 		long now = millis();
+
+		clock.setMode(Clock::TEMP);
 
 		if( irrecv.decode(&results) ) {
 			menu.notifyEvent(results.value);

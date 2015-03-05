@@ -65,6 +65,7 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.791847333" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__32MX460F256L__"/>
+									<listOptionValue builtIn="false" value="_DEBUG"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2136373028" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>

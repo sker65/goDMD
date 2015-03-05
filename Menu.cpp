@@ -1,15 +1,17 @@
 /*
  * Menu.cpp
+ * implements a service menu to config go dmd clock
  *
- *  Created on: 08.02.2015
+ * Created on: 08.02.2015
  *      Author: sr
  */
 
 // we replace EEPROM store through sd card store #include <EEPROM.h>
 #include <SD.h>
 #include "Menu.h"
+#include "debug.h"
 
-
+// menu texts
 const char* mmText[] = {
 		"Helligkeit       ",
 		"dunkel","mittel","hell",
@@ -79,17 +81,17 @@ Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd) :
 	int j = 1;
 	titleIndex[0] = 0;
 	int k = 1;
-	Serial.print("menu: "); Serial.println(mmText[0]);
+	DPRINTF("menu: %s\n",mmText[0]);
 	while(j<NMENU+5) {
 		if( mmText[i][0] == '.' ) {
-			Serial.print("options: "); Serial.println(i-k);
+			DPRINTF("options: %d\n",i-k);
 			nOptions[j-1] = i-k;
 			k = i+2;
 			if( mmText[i+1][0] == '.') {
 				break;
 			}
 			titleIndex[j] = i+1;
-			Serial.print("menu: "); Serial.println(mmText[i+1]);
+			DPRINTF("menu: %s\n", mmText[i+1]);
 			j++;
 		}
 		i++;
@@ -113,6 +115,9 @@ void Menu::update(long now) {
 	}
 }
 
+// these are the codes from the IR receiver that the irrecv method decodes
+// must be adapted for the given ir controller
+
 // ani colors
 #define RED_BUT 0xE85952E1
 #define GREEN_BUT 0x78CDA4DD
@@ -130,7 +135,7 @@ void Menu::update(long now) {
  * IR Decoder notifies events here
  */
 void Menu::notifyEvent(unsigned long event) {
-	printf("Menu notify: 0x%06x\n", event );
+	DPRINTF("Menu notify: 0x%06x\n", event );
 	switch( event ) {
 		case RED_BUT:
 			panel->setAnimationColor(0);
@@ -163,6 +168,9 @@ void Menu::notifyEvent(unsigned long event) {
 	}
 }
 
+/**
+ * called when main menu changes. stores configured item, if changed
+ */
 void Menu::saveOption() {
 	if( actOption != option[actMenu] ) {
 		dirty = true;
@@ -175,13 +183,19 @@ void Menu::saveOption() {
 
 #define OPTION_DAT "OPTION.DAT"
 
+/**
+ * load menu options from sd card
+ */
 void Menu::loadOptions() {
 
 	// load options from SD card
 	SdFile f;
 	if( f.open(SD.root, OPTION_DAT, O_READ) ) {
-		f.read((void*)option, NMENU);
+		int r = f.read((void*)option, NMENU);
+		DPRINTF("Menu::loadOptions loaded %d bytes\n",r);
 		f.close();
+	} else {
+		DPRINTF("Menu::loadOptions %s not found\n",OPTION_DAT);
 	}
 	
 	// load all settings from eeprom and display menu
@@ -197,13 +211,19 @@ void Menu::loadOptions() {
 
 }
 
+/**
+ * callback with is called from buttons
+ * TODO: actually two buttons are expected, but piguino micro has only
+ * one. must be fixed to implement one button control.
+ * not needed actually as we have ir control support
+ */
 void Menu::buttonReleased(uint8_t n, bool longClick) {
-	printf("button %d %d \n", n, longClick);
+	DPRINTF("button %d %d \n", n, longClick);
 	if( active ) {
 		redrawNeeded = true;
 		if( n==BUTTON_MENU && longClick ) {
 			saveOption();
-			printf("leave menu\n");
+			DPRINTF("leave menu\n");
 			leaveMenu();
 		}
 		if( n==BUTTON_MENU && !longClick ) {
@@ -214,15 +234,15 @@ void Menu::buttonReleased(uint8_t n, bool longClick) {
 			if( actMenu >= NMENU ) {
 				actMenu=0;
 			}
-			Serial.print("menu "); Serial.println(mmText[titleIndex[actMenu]]);
+			DPRINTF("menu %s\n",mmText[titleIndex[actMenu]]);
 			// load active option from next menu
 			actOption = option[actMenu];
 			// ensure werte bereich
-			Serial.print("option: ");Serial.println(actOption);
-			Serial.print("option[actMenu]: ");Serial.println(nOptions[actMenu]);
+			DPRINTF("option: %d\n", actOption);
+			DPRINTF("option[actMenu]: %d\n", nOptions[actMenu]);
 			if( actMenu<0 || actOption >= nOptions[actMenu] ) actOption = 0;
 
-			Serial.print("option "); Serial.println(actOption);
+			DPRINTF("actOption: %s\n", actOption);
 		}
 		if( n==BUTTON_SEL && !longClick ) {
 			actOption++;
@@ -247,6 +267,9 @@ void Menu::enterMenu() {
 	active=true;
 }
 
+/**
+ * redraws whole menu if item changes
+ */
 void Menu::redrawMenu() {
 	char op[17] = "                ";
 	int i = titleIndex[actMenu];
@@ -265,7 +288,7 @@ void Menu::leaveMenu() {
 	if( clockDirty ) {
 		//uint16_t year, uint8_t month, uint8_t day,
 		// uint8_t hour =0, uint8_t min =0, uint8_t sec =0
-		Serial.println("setting rtc");
+		DPRINTF("setting rtc.\n");
 		DateTime dt(
 				option[SET_DATE_YEAR]+2015,
 				option[SET_DATE_MON]+1,
@@ -279,8 +302,11 @@ void Menu::leaveMenu() {
 
 	SdFile f;
 	if( f.open(SD.root, OPTION_DAT, O_CREAT|O_WRITE) ) {
-		f.write((void*)option, NMENU);
+		int r = f.write((void*)option, NMENU);
+		DPRINTF("Menu::leaveMenu written %d bytes\n",r);
 		f.close();
+	} else {
+		DPRINTF("Menu::leaveMenu: open for write %s failed.", OPTION_DAT);
 	}
 
 	active = false;

@@ -238,11 +238,10 @@ void Menu::buttonReleased(uint8_t n, bool longClick) {
 			// load active option from next menu
 			actOption = option[actMenu];
 			// ensure werte bereich
-			DPRINTF("option: %d\n", actOption);
-			DPRINTF("option[actMenu]: %d\n", nOptions[actMenu]);
+			DPRINTF("actOption: %d\n", actOption);
+			DPRINTF("nOptions[actMenu]: %d\n", nOptions[actMenu]);
 			if( actMenu<0 || actOption >= nOptions[actMenu] ) actOption = 0;
-
-			DPRINTF("actOption: %s\n", actOption);
+			DPRINTF("trimmed actOption: %d\n", actOption);
 		}
 		if( n==BUTTON_SEL && !longClick ) {
 			actOption++;

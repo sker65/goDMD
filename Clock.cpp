@@ -229,8 +229,8 @@ const byte clockDigits[13][64] =
 Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc, SDClass* sd,
 		DallasTemperature* sensor) :
 		panel(p), nextClockRefresh(0), nextRtcSync(0), nextTempSync(0),
-		actTemp(0.0),
-		sd(sd), sensor(sensor) {
+		sd(sd), sensor(sensor),
+		actTemp(0.0) {
 	this->rtc = &rtc;
 	brightness = 0;
 	active = false;
@@ -242,38 +242,52 @@ Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc, SDClass* sd,
 Clock::~Clock() {
 }
 
+void Clock::readFont(File* f, Digit* digits, int _size) {
+	int j = 0;
+	int size = _size;
+	while(size-- > 0) {
+		f->read(); // ignore char
+		digits[j].width = f->read()*256+f->read();
+		digits[j].height = f->read()*256+f->read();
+		digits[j].sizeInBytes = f->read()*256+f->read();
+		// create struct for font data
+		digits[j].data = (byte*)malloc(digits[j].sizeInBytes);
+		f->read(digits[j].data,digits[j].sizeInBytes);
+		// frame2 überlesen
+		for(int k = 0;k < digits[j].sizeInBytes;k++) f->read();
+		j++;
+	}
+	// now read mask
+	j = 0;
+	size = f->read();
+	if( _size != size ) {
+		DPRINTF("size of mask does not match data!!");
+	}
+	while(size-- > 0) {
+		f->read(); // ignore char
+		f->seekCur(6); // skip dimensions
+		digits[j].mask = (byte*)malloc(digits[j].sizeInBytes);
+		f->read(digits[j].data,digits[j].sizeInBytes);
+		// frame2 überlesen
+		for(int k = 0;k < digits[j].sizeInBytes;k++) f->read();
+		j++;
+	}
+
+}
+
 boolean Clock::begin() {
 	File f = sd->open("font.dat");
 	if( !f ) return false;
 	DPRINTF("reading font.dat\n");
 	// size of map -> how many chars
-	int j = 0;
 	uint8_t size = f.read();
+	DPRINTF("big font uses %d chars\n",size);
 	digits = (Digit*)malloc(sizeof(Digit)*size);
-	while(size-- > 0) {
-		f.read(); // ignore char
-		digits[j].width = f.read()*256+f.read();
-		digits[j].height = f.read()*256+f.read();
-		digits[j].sizeInBytes = f.read()*256+f.read();
-		// create struct for font data
-		digits[j].data = (byte*)malloc(digits[j].sizeInBytes);
-		f.read(digits[j].data,digits[j].sizeInBytes);
-		// frame2 überlesen
-		for(int k = 0;k < digits[j].sizeInBytes;k++) f.read();
-		j++;
-	}
-	// now read mask
-	j = 0;
+	readFont(&f, digits, size);
 	size = f.read();
-	while(size-- > 0) {
-		f.read(); // ignore char
-		f.seekCur(6);
-		digits[j].mask = (byte*)malloc(digits[j].sizeInBytes);
-		f.read(digits[j].data,digits[j].sizeInBytes);
-		// frame2 überlesen
-		for(int k = 0;k < digits[j].sizeInBytes;k++) f.read();
-		j++;
-	}
+	smallDigits = (Digit*)malloc(sizeof(Digit)*size);
+	DPRINTF("small font uses %d chars\n",size);
+	readFont(&f, smallDigits, size);
 	f.close();
 	return true;
 }
@@ -378,6 +392,7 @@ int Clock::writeDoubleDigit(int digit, int x, byte* buffer) {
 void Clock::writeTemp(float actTemp, byte* buffer) {
 	char buf[7];
 	sprintf(buf, "%03.1f °C",actTemp);
+	DPRINTF("showing temp: %s\n",buf);
 	writeText(buf,3,buffer);
 }
 

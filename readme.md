@@ -32,6 +32,7 @@ Anpassungen, damit sie aus dem pinguino micro ohne Probleme läuft.
 Änderungen:
 SD:
 - seekCur eingefügt.
+
 Sd2Card:
 - setTranfersize to 8 bit
 - setSpeed to 10000000UL (instead of 20000000UL) faster speed does not work

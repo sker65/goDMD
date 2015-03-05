@@ -272,7 +272,8 @@ void LEDMatrixPanel::updateScreen() {
 	// might otherwise also be twiddling the port at the same time
 	// (else this would clobber them).
 
-	uint8_t tick, tock;
+	//uint8_t tick, tock;
+
 	volatile uint8_t *ptr;
 	uint8_t p1;
 
@@ -281,10 +282,7 @@ void LEDMatrixPanel::updateScreen() {
 
 	ptr =  buffptr[actBuffer] + plane * width / 4;
 
-#ifdef _DEBUG
-	Serial.print("Buffer adress for plane: ");Serial.print(plane,DEC);Serial.print(" actBuffer: ");
-	Serial.print(actBuffer,DEC);Serial.print(" is ");Serial.println((long)ptr,HEX);
-#endif
+	// DPRINTF("Buffer adress for plane: %d actBuffer: %d is 0x%08x", plane, actBuffer, ptr);
 	
 //(uint8_t *)
 	uint8_t col = 0;

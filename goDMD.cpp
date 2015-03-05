@@ -76,7 +76,7 @@ void setup() {
 		delay(1000);
 	}
 #endif
-	DPRINTF("calling panel begin");
+	DPRINTF("calling panel begin\n");
 	panel.begin();
 
 	panel.setAnimationColor(1);
@@ -174,9 +174,10 @@ void loop() {
 
 	//testScreen();
 
-	clock.on();
-
+	menu.loadOptions();
 	reloadConfig();
+
+	clock.on();
 
 	long switchToDate = 0;
 	long switchToTime = 0;
@@ -186,7 +187,7 @@ void loop() {
 	while(true) {
 		long now = millis();
 
-		clock.setMode(Clock::TEMP);
+		//clock.setMode(Clock::TEMP);
 
 		if( irrecv.decode(&results) ) {
 			menu.notifyEvent(results.value);

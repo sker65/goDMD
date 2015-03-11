@@ -7,7 +7,7 @@
  */
 
 #include <IRremote.h>
-#include <Wire.h>
+#include <OneWire.h>
 #include <SD.h>
 #include <DallasTemperature.h>
 #include <RTClib.h>
@@ -68,9 +68,24 @@ extern "C"
   }
 }
 
+void plotPoints() {
+	int v = 1;
+	while( true ) {
+		for( y = 0; y<32;y++) {
+			for( int x = 0; x<128;x++) {
+				panel.setPixel(x,y,v);
+				delay(5);
+			}
+		}
+		v ^= 1;
+	}
+}
+
+
+
 void setup() {
 	Serial.begin(9600);
-#ifdef _DEBUG
+#ifdef _DxEBUG
 	for( int i =0; i<5;i++) {
 		DPRINTF("wait %lu \n", millis());
 		delay(1000);
@@ -80,11 +95,14 @@ void setup() {
 	panel.begin();
 
 	panel.setAnimationColor(1);
+	panel.setTimeColor(1);
 
 	// start ir receiver
 	irrecv.enableIRIn();
 	
+
 	panel.println(VERSION);
+
 	DPRINTF("calling wire begin\n");
 	panel.println("start wire ..");
 	Wire.begin();
@@ -107,31 +125,55 @@ void setup() {
 		panel.println("(c)2015 by Steve");
 	}
 
-	if( !animation.begin() ) {
-		panel.println("init anis fail");
-		panel.println("*.ani not found");
-	}
-	
 	if( !clock.begin() ) {
 		panel.println("init clock fail");
 		panel.println("font not found");
+	}
+
+	if( !animation.begin() ) {
+		panel.println("init anis fail");
+		panel.println("*.ani not found");
 	}
 
 	sensor.begin();
 	DPRINTF("sensors found: %d\n",sensor.getDeviceCount());
 
 	pinMode(PIR_PIN,OUTPUT);
+	//plotPoints();
 
-	delay(1000);
 	panel.clear();
+
+	panel.clearTime();
+
+	//sensor.requestTemperaturesByIndex(0);
+	DPRINTF("temp: %03.1f *C\n",sensor.getTempCByIndex(0));
+	//clock.setMode(Clock::TEMP);
+	//clock.update(millis());
+	clock.writeTemp(sensor.getTempCByIndex(0));
+	delay(5000);
+
+
+
+/*
+  	clock.writeDigit(0,0,0,clock.digits);
+	delay(1000);
+	clock.writeDigit(0,17,6,clock.smallDigits);
+	delay(1000);
+	clock.writeDigit(0,35,0,clock.digits);
+
+	delay(5000);
+	panel.clearTime();
+	clock.writeText("123:.7",0,0,clock.digits);
+	delay(5000);
+*/
 	//pinMode(PIN_LED1,OUTPUT);
 	//rtc.adjust(DateTime(__DATE__, __TIME__));
 }
 
-
 int clockShowTime = 2000; // millis to show clock
 // viewing mode (with date or not)
 int dateMode = 0;
+int tempMode = 0;
 
 // TODO no global function this way
 void reloadConfig() {
@@ -144,7 +186,8 @@ void reloadConfig() {
 	clock.setMode(menu.getOption(SET_TIME_MODE)==1?Clock::TIMESEC:Clock::TIME);
 	clockShowTime = 1500 * (menu.getOption(SET_TIME_DURATION)+1);
 	dateMode = menu.getOption(SET_DATE_MODE);
-
+	tempMode = menu.getOption(SET_TEMP_MODE);
+	animation.setFskMode(menu.getOption(FSK_MODE));
 }
 
 void drawRect(int x, int y, int w, int h, int col ) {
@@ -169,7 +212,7 @@ enum State { showTime, showDate, showAni, showMenu, freeze,
 
 void loop() {
 	long now = millis();
-	long switchToAni = now + 2000;
+	long switchToAni = 0;
 	State state = showTime;
 
 	//testScreen();
@@ -177,10 +220,11 @@ void loop() {
 	menu.loadOptions();
 	reloadConfig();
 
-	clock.on();
+	switchToAni = now + clockShowTime;
 
 	long switchToDate = 0;
 	long switchToTime = 0;
+	int dateShowCount = 0;
 
 	boolean pir = false; // true / high means active
 
@@ -216,14 +260,26 @@ void loop() {
 
 		switch( state ) {
 		case showTime:
+			clock.on();
 			if( now > switchToAni ) {
 				state = showAni;
 				clock.off();
 			}
-			if( dateMode==1 && now > switchToDate ) {
+			if( dateMode==0 && now > switchToDate ) {
 				state = showDate;
-				clock.setMode(Clock::DATE);
+				if( tempMode == 0 && dateShowCount > 2) {
+					dateShowCount=0;
+					clock.setMode(Clock::TEMP);
+				} else {
+					clock.setMode(Clock::DATE);
+				}
 				switchToTime = now + 2000; // viewing duration date
+				dateShowCount++;
+			}
+			else if( tempMode == 0 && now > switchToDate ) {
+				state = showDate;
+				clock.setMode(Clock::TEMP);
+				switchToTime = now + 2000;
 			}
 			clock.update(now);
 			break;
@@ -233,7 +289,7 @@ void loop() {
 				clock.off();
 			}
 			if( now > switchToTime ) {
-				switchToDate = switchToAni + 20000; // weit weg
+				switchToDate = switchToAni + 50000; // weit weg
 				clock.setMode(menu.getOption(SET_TIME_MODE)==1?Clock::TIMESEC:Clock::TIME);
 				state = showTime;
 			}

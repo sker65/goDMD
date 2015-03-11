@@ -37,17 +37,17 @@
 
 #define SET_TEMP_MODE 12
 #define SET_PIR_MODE 13
+#define FSK_MODE 14
 
 #define EEPROM_START 8
-#define EEPROM_END 13
+#define EEPROM_END 14
 
-#define NMENU 14
+#define NMENU 15
 
 #define PIR_INACTIVE 0
 #define PIR_DIM 1
 #define PIR_NOANI 2
 #define PIR_SWITCHOFF 3
-
 
 class SDClass;
 
@@ -83,7 +83,6 @@ private:
 	SDClass* sd;
 	Button menuButton;
 	//Button selButton;
-
 	bool active;
 	bool dirty; // needs reconfig
 	bool redrawNeeded;

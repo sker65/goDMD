@@ -19,8 +19,11 @@ public:
 	void readNextFrame(long now, bool mask);
 	boolean update(long now);
 	boolean begin();
+	void setFskMode(int mode);
 
 protected:
+	void skipAllFrames(File& f);
+
 	Clock& clock;
 	SDClass& sd;
 	File ani;
@@ -31,15 +34,20 @@ protected:
 	uint16_t actAnimation;
 	uint16_t actFrame;
 
+	uint8_t fskFilter;
 	uint8_t cycles;
 	uint8_t holdCycles;
 	uint16_t actFilePos;
 	uint8_t refreshDelay;
 	uint16_t clockFrom;
+	uint16_t xoffset;
+	uint16_t yoffset;
+	uint8_t fsk;
 
 	long nextAnimationUpdate;
 	boolean hold;
 	boolean clockInFront;
+	boolean clockSmall;
 };
 
 #endif /* ANIMATION_H_ */

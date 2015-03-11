@@ -28,6 +28,7 @@ struct Digit {
 class Clock {
 public:
 	enum Mode { TIME, TIMESEC, DATE, TEMP };
+	enum Font { Big, Small };
 
 	Clock(LEDMatrixPanel& panel, RTC_DS1307& rtc, SDClass* sd, DallasTemperature* sensor);
 	void update(long now);
@@ -40,7 +41,10 @@ public:
 	// writes temperature
 	void writeTemp(float actTemp, byte* buffer = NULL);
 	// switch clock off
-	void writeText(char* text, int offset, byte* buffer = NULL);
+	void writeText(const char* text, int x, int y, Digit* charset, byte* buffer = NULL);
+
+	void formatTime(char* buffer, long now);
+
 	void off();
 
 	void clear();
@@ -54,14 +58,19 @@ public:
 	DateTime& getActualTime();
 	void setMode( Mode newMode);
 	Mode getMode() const { return mode; }
-
-protected:
-	void readFont(File* f, Digit* d, int size);
-	void writeDigit(int digit, int xoffset, uint8_t nBytes, byte* buffer = NULL);
-	int writeDoubleDigit(int digit, int x, byte* buffer);
+	//void writeDigit(int digit, int xoffset, uint8_t nBytes, byte* buffer = NULL);
+	int writeDigit(int digit, int x, int y, Digit* charset );
+	//int writeDoubleDigit(int digit, int x, byte* buffer);
 
 	Digit* digits;
 	Digit* smallDigits;
+
+	void setFont(Font font) {this->font = font;}
+	void setXoffset(uint16_t xo){ this->xoffset = xo; }
+	void setYoffset(uint16_t yo){ this->yoffset = yo; }
+
+protected:
+	void readFont(File* f, Digit* d, int size);
 
 	RTC_DS1307* rtc;
 	SDClass* sd;
@@ -76,6 +85,9 @@ protected:
 	DateTime n;
 	boolean active;
 	Mode mode;
+	uint16_t xoffset;
+	uint16_t yoffset;
+	Font font;
 };
 
 #endif /* CLOCK_H_ */

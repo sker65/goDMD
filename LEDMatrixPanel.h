@@ -20,7 +20,7 @@ public:
 
 	virtual ~LEDMatrixPanel();
 
-	uint8_t** getBuffers();
+	volatile uint8_t** getBuffers();
 
 	void enableLEDs();
 

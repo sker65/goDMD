@@ -99,9 +99,9 @@ void Animation::readNextAnimation() {
 }
 
 void Animation::skipAllFrames(File& f) {
-	uint16_t len = f.read()*256+f	.read();
 	for( int i = 0; i < numberOfFrames; i++) {
 		DPRINTF("skipping frame: %d\n", i);
+		uint16_t len = f.read()*256+f.read();
 		byte buf[len];
 		f.readBytes(buf, len);
 		f.readBytes(buf, len);

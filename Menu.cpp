@@ -59,6 +59,9 @@ const char* mmText[] = {
 		"PIR Mode          ",
 		"inaktiv", "dim", "no ani", "switchoff",
 		".",
+		"FSK Filter        ",
+		"18", "16", "12", "6",
+		".",
 		"." // end mark
 };
 
@@ -135,7 +138,7 @@ void Menu::update(long now) {
  * IR Decoder notifies events here
  */
 void Menu::notifyEvent(unsigned long event) {
-	DPRINTF("Menu notify: 0x%06x\n", event );
+	DPRINTF("Menu notify: 0x%06lx\n", event );
 	switch( event ) {
 		case RED_BUT:
 			panel->setAnimationColor(0);

@@ -10,6 +10,7 @@
 
 // use this to control the color resolution per pixel per color channel
 #define bitsPerPixel 2
+#define clockPlane 2
 
 #if defined(__PIC32MX__) 
 
@@ -274,29 +275,26 @@ void LEDMatrixPanel::updateScreen() {
 
 	//uint8_t tick, tock;
 
-	volatile uint8_t *ptr;
-	uint8_t p1;
+	volatile uint8_t *ptr, *ptr1;
 
-//	tock = SCLKPORT;
-//	tick = tock | sclkpin;
+	ptr =  buffptr[actBuffer] + plane * (width / 8);
+	ptr1 =  buffptr[actBuffer] + 256 + plane * (width / 8);
 
-	ptr =  buffptr[actBuffer] + plane * width / 4;
-
+	//volatile uint32_t *bptr = (volatile uint32_t *)ptr, *bptr1 = (volatile uint32_t *bptr1;
 	// DPRINTF("Buffer adress for plane: %d actBuffer: %d is 0x%08x", plane, actBuffer, ptr);
 	
-//(uint8_t *)
 	uint8_t col = 0;
 
-	if (actBuffer == 2) { // clock plane
+	if (actBuffer == clockPlane) { // clock plane
 		col = timeColor;
 	} else {
 		col = aniColor;
 	}
 
-	for (uint8_t xb = 0; xb < width / 4; xb++) { // weil 2 bits geshifted wird
-
-		p1 = *ptr++;
-		for (int j = 0; j < 4; j++) { // nur 4 shifts da pro ausgabe 2 pixel
+	for (uint8_t xb = 0; xb < width / 8; xb++) { // weil 2 bits geshifted wird
+		uint8_t b1 = *ptr++;
+		uint8_t b2 = *ptr1++;
+		for (int j = 0; j < 8; j++) { // nur 4 shifts da pro ausgabe 2 pixel
 
 // eigentlich nicht platform abhängig sondern nur hinsichtlich der Lage der Bits auf den Ports
 // beim Mega sind es die oberen 4 bit des ersten bytes (port ist nur 8 Bit)
@@ -314,31 +312,28 @@ void LEDMatrixPanel::updateScreen() {
 #endif
 // beim pic32 sind es die unteren 4 bit 0/1 für rot und 2/3 für grün
 #ifdef __PIC32MX__
-			/*if( plane == 2 ) {
-				digitalWrite(R1_PIN,LOW);
-				digitalWrite(R2_PIN,LOW);
-			} else {
-				digitalWrite(G1_PIN,HIGH);
-				digitalWrite(G1_PIN,HIGH);
-			}*/
-
+			uint16_t out = 0xFFFF;
 			if( col == 1) {
 				// green
-				DATAPORT = (DATAPORT & ~0b00001100 ) | (p1 & 0b11000000)>>4 ;
+				out = ((b1 & 0b10000000)>>4) | ((b2 & 0b10000000)>>5) | 0b00000011;
 			} else if( col == 0) {
 				// red
-				DATAPORT = (DATAPORT & ~0b00000011 ) | (p1 & 0b11000000)>>6 ;
+				//DATAPORT = (DATAPORT & ~0b00000011 ) | (b1 & 0b11000000)>>6 ;
+				out = ((b1 & 0b10000000)>>6) | ((b2 & 0b10000000)>>7) | 0b00001100;
 			} else {
 				// amber
-				DATAPORT = (DATAPORT & ~0b00001111 ) | ((p1 & 0b11000000)>>6) | ((p1 & 0b11000000)>>4);
+				//DATAPORT = (DATAPORT & ~0b00001111 ) | ((b1 & 0b11000000)>>6) | ((b1 & 0b11000000)>>4);
+				out = ((b1 & 0b10000000)>>6) | ((b2 & 0b10000000)>>7) | ((b1 & 0b10000000)>>4) | ((b2 & 0b10000000)>>5);
 			}
+			DATAPORT = out; //(DATAPORT & ~0b00001111 ) | out;
 #endif
 
 			// shift out
 			*sclkport &= ~sclkpin;	// Clock lo
 			//delayMicroseconds(3); // just to see the pulse on my very slow osci
 			*sclkport |= sclkpin; // Clock hi
-			p1 <<= 2;
+			b1 <<= 1;
+			b2 <<= 1;
 		}
 		
 	} // bytes to shift
@@ -424,8 +419,8 @@ void LEDMatrixPanel::disableLEDs() {
 	*oeport |= oepin;  // Disable LED output during row/plane switchover
 }
 
-uint8_t** LEDMatrixPanel::getBuffers() {
-	return (uint8_t**)buffptr;
+volatile uint8_t** LEDMatrixPanel::getBuffers() {
+	return buffptr;
 }
 
 // masken zum setzen von pixeln
@@ -444,29 +439,31 @@ uint8_t mask [] = {
 
 void LEDMatrixPanel::setPixel(uint8_t x, uint8_t y, uint8_t v) {
 	uint8_t bitpos = 0;
-	int yoffset = y * (width/4);
-	if( y >= height/2) {
-		bitpos = 4;
-		yoffset = (y - height/2 ) * (width/4);
-	}
+	int yoffset = y * (width/8);
+//	if( y >= height/2) {
+//		bitpos = 4;
+//		yoffset = (y - height/2 ) * (width/4);
+//	}
 
-	uint8_t* ptr =  (uint8_t *) buffptr[0] + yoffset  + x/4;
+	uint8_t* ptr =  (uint8_t *) buffptr[0] + yoffset  + x/8;
 	uint8_t pix = *ptr;
-	uint8_t* ptr1 =  (uint8_t *) buffptr[1] + yoffset  + x/4;
+	uint8_t* ptr1 =  (uint8_t *) buffptr[1] + yoffset  + x/8;
 	uint8_t pix1 = *ptr1;
 
+	uint8_t mask = ~( 128 >> (x%8));
+
 	if( v==1 ) {
-		*ptr = pix & mask[(x&3)+bitpos];
-		*ptr1 = pix1 | ~ mask[(x&3)+bitpos];
+		*ptr = pix & mask;//[(x&3)+bitpos];
+		*ptr1 = pix1 | ~ mask;//[(x&3)+bitpos];
 	} else if (v==2) {
-		*ptr = pix | ~ mask[(x&3)+bitpos];
-		*ptr1 = pix1 & mask[(x&3)+bitpos];
+		*ptr = pix | ~ mask;//[(x&3)+bitpos];
+		*ptr1 = pix1 & mask;//[(x&3)+bitpos];
 	} else if (v==3) {
-		*ptr = pix & mask[(x&3)+bitpos];
-		*ptr1 = pix1 & mask[(x&3)+bitpos];
+		*ptr = pix & mask;//[(x&3)+bitpos];
+		*ptr1 = pix1 & mask;//[(x&3)+bitpos];
 	} else if( v== 0) {
-		*ptr = pix | ~ mask[(x&3)+bitpos];
-		*ptr1 = pix1 | ~ mask[(x&3)+bitpos];
+		*ptr = pix | ~ mask;//[(x&3)+bitpos];
+		*ptr1 = pix1 | ~ mask;//[(x&3)+bitpos];
 	}
 
 }
@@ -480,7 +477,7 @@ void LEDMatrixPanel::clear() {
 
 void LEDMatrixPanel::clearTime() {
 	for( int i = 0; i<buffersize; i++) {
-		buffptr[2][i]=0xff;
+		buffptr[clockPlane][i]=0xff;
 	}
 }
 

@@ -62,6 +62,12 @@ const char* mmText[] = {
 		"FSK Filter        ",
 		"18", "16", "12", "6",
 		".",
+		"Uhr Blink         ",
+		"an", "aus",
+		".",
+		"Uhr 12/24H        ",
+		"24", "12",
+		".",
 		"." // end mark
 };
 

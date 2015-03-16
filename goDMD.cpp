@@ -180,14 +180,16 @@ void reloadConfig() {
 	panel.setAnimationColor(menu.getOption(SET_COLOR_ANI));
 	panel.setTimeColor(menu.getOption(SET_COLOR_CLOCK));
 	panel.setBrightness(menu.getOption(SET_BRIGHTNESS));
-#ifdef _DEBUG
-	printf("set time mode: %d\n", menu.getOption(SET_TIME_MODE));
-#endif
+
 	clock.setMode(menu.getOption(SET_TIME_MODE)==1?Clock::TIMESEC:Clock::TIME);
+	DPRINTF("set time mode: %d\n", menu.getOption(SET_TIME_MODE));
+
 	clockShowTime = 1500 * (menu.getOption(SET_TIME_DURATION)+1);
 	dateMode = menu.getOption(SET_DATE_MODE);
 	tempMode = menu.getOption(SET_TEMP_MODE);
 	animation.setFskMode(menu.getOption(FSK_MODE));
+	clock.setHour24(menu.getOption(H2412_MODE)==MODE_24H);
+	clock.setBlinkingTick(menu.getOption(BLINK_MODE)==BLINK_ON);
 }
 
 void drawRect(int x, int y, int w, int h, int col ) {

@@ -12,7 +12,6 @@
 #include <SD.h>
 #include "utility/bitprims.h"
 
-TimeSpan onesec(1);
 
 #define maxBrightness 2
 #define clockPlane 2
@@ -103,7 +102,7 @@ void Clock::update(long now) {
 	if (nextRtcSync < now) {
 		nextRtcSync = now + 30L * 60L * 1000L;  // 30 min
 		n = rtc->now();
-		lastRtcSync = now;
+		lastRtcSync = millis();
 	}
 	if (nextClockRefresh < now) {
 		nextClockRefresh = now + 500;
@@ -117,9 +116,9 @@ void Clock::update(long now) {
 			break;
 		case TEMP:
 			if( nextTempSync < now ) {
-				//sensor->requestTemperaturesByIndex(0);
-				actTemp= 23.1;//sensor->getTempCByIndex(0);
-				nextTempSync = now + 20 * 1000L; // every 20 sec
+				sensor->requestTemperatures();
+				actTemp= sensor->getTempCByIndex(0);
+				nextTempSync = now + 40 * 1000L; // every 40 sec
 			}
 			writeTemp(actTemp);
 			break;
@@ -194,8 +193,8 @@ void Clock::writeDate(long now, byte* buffer) {
 }
 
 void Clock::formatTime(char* time, long now) {
-	DateTime dateTime(n.unixtime() + (now - lastRtcSync) / 1000);
-	boolean tick = blinkingTick ? true : (now % 1000) > 500;
+	DateTime dateTime(n.unixtime() + ( (millis() - lastRtcSync) / 1000 ));
+	boolean tick = !blinkingTick ? true : (now % 1000) > 500;
 	int hour = dateTime.hour();
 	if( !hour24 ) {
 		if( hour == 0 ) hour = 12;

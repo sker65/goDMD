@@ -68,6 +68,9 @@ const char* mmText[] = {
 		"Uhr 12/24H        ",
 		"24", "12",
 		".",
+		"Ani Reihenfolge   ",
+		"fest", "zufaellig",
+		".",
 		"." // end mark
 };
 

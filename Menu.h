@@ -39,6 +39,7 @@
 #define FSK_MODE 14
 #define BLINK_MODE 15
 #define H2412_MODE 16
+#define ANIORDER_MODE 17
 
 #define BLINK_ON 0
 #define BLINK_OFF 1
@@ -49,7 +50,7 @@
 #define EEPROM_START 8
 #define EEPROM_END 14
 
-#define NMENU 17
+#define NMENU 18
 
 #define PIR_INACTIVE 0
 #define PIR_DIM 1

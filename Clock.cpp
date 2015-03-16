@@ -29,6 +29,9 @@ Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc, SDClass* sd,
 	mode = TIME;
 	lastRtcSync = 0;
 	digits = 0L;
+	nextTempSync = 0;
+	blinkingTick = true;
+	hour24 = true;
 }
 
 Clock::~Clock() {
@@ -192,13 +195,18 @@ void Clock::writeDate(long now, byte* buffer) {
 
 void Clock::formatTime(char* time, long now) {
 	DateTime dateTime(n.unixtime() + (now - lastRtcSync) / 1000);
-	boolean tick = (now % 1000) > 500;
+	boolean tick = blinkingTick ? true : (now % 1000) > 500;
+	int hour = dateTime.hour();
+	if( !hour24 ) {
+		if( hour == 0 ) hour = 12;
+		else if( hour > 12 ) hour -= 12;
+	}
 	if (mode==TIME) {
 		sprintf(time,tick?"%02d:%02d":"%02d %02d",
-				dateTime.hour(),dateTime.minute());
+				hour,dateTime.minute());
 	} else {
 		sprintf(time,tick?"%02d:%02d:%02d":"%02d %02d %02d",
-				dateTime.hour(),dateTime.minute(),dateTime.second());
+				hour,dateTime.minute(),dateTime.second());
 	}
 }
 

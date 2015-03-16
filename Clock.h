@@ -69,6 +69,22 @@ public:
 	void setXoffset(uint16_t xo){ this->xoffset = xo; }
 	void setYoffset(uint16_t yo){ this->yoffset = yo; }
 
+	boolean getBlinkingTick() const {
+		return blinkingTick;
+	}
+
+	void setBlinkingTick(boolean blinkingTick) {
+		this->blinkingTick = blinkingTick;
+	}
+
+	boolean getHour24() const {
+		return hour24;
+	}
+
+	void setHour24(boolean hour24) {
+		this->hour24 = hour24;
+	}
+
 protected:
 	void readFont(File* f, Digit* d, int size);
 
@@ -84,10 +100,15 @@ protected:
 	uint8_t brightness;
 	DateTime n;
 	boolean active;
+	// diaplay mode
 	Mode mode;
+	// clock display location, when small font is used
 	uint16_t xoffset;
 	uint16_t yoffset;
+	// whether to use big font or small font (or even more than one)
 	Font font;
+	boolean blinkingTick;
+	boolean hour24;
 };
 
 #endif /* CLOCK_H_ */

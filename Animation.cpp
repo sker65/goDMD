@@ -17,6 +17,7 @@ sd(sd), panel(panel), clock(clock) {
 	numberOfAnimations=0;
 	numberOfFrames=0;
 	fskFilter = 18;
+	seenAllAnimations = false;
 }
 
 boolean Animation::begin() {
@@ -32,6 +33,9 @@ boolean Animation::begin() {
 	numberOfAnimations  = ani.read()*256+ani.read();
 	DPRINTF("number of animations: %d\n",numberOfAnimations);
 	// pos is now 8
+
+	aniIndex = (uint32_t*)malloc( sizeof(uint32_t*)*numberOfAnimations);
+	randomSeed((int)millis());
 	return true;
 }
 
@@ -47,9 +51,13 @@ void readString(File& f) {
 
 void Animation::readNextAnimation() {
 	int c = 0;
+	if( randomOrder && seenAllAnimations ) {
+		actAnimation = random(numberOfAnimations);
+		ani.seek(aniIndex[actAnimation]);
+	}
 	while(true) {
 		actFilePos = ani.position();
-
+		aniIndex[actAnimation] = actFilePos;
 		readString(ani);
 		// cycles 2
 		int cyc = ani.read()*256+ani.read();
@@ -93,6 +101,7 @@ void Animation::readNextAnimation() {
 		if( actAnimation >= numberOfAnimations ) {
 			ani.seek(8); // reset
 			actAnimation = 0;
+			seenAllAnimations = true;
 		}
 		if( c++ >= numberOfAnimations) break;;
 	}; // at least one must remain

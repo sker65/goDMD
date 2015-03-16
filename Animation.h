@@ -21,6 +21,10 @@ public:
 	boolean begin();
 	void setFskMode(int mode);
 
+	void setRandomOrder(boolean randomOrder) {
+		this->randomOrder = randomOrder;
+	}
+
 protected:
 	void skipAllFrames(File& f);
 
@@ -37,17 +41,23 @@ protected:
 	uint8_t fskFilter;
 	uint8_t cycles;
 	uint8_t holdCycles;
-	uint16_t actFilePos;
+	uint32_t actFilePos;
 	uint8_t refreshDelay;
 	uint16_t clockFrom;
 	uint16_t xoffset;
 	uint16_t yoffset;
 	uint8_t fsk;
 
+	uint32_t* aniIndex;
+
 	long nextAnimationUpdate;
 	boolean hold;
 	boolean clockInFront;
 	boolean clockSmall;
+
+	boolean randomOrder;
+	boolean seenAllAnimations; // switches to true, when all animations scanned in the first run
+
 };
 
 #endif /* ANIMATION_H_ */

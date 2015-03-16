@@ -81,8 +81,6 @@ void plotPoints() {
 	}
 }
 
-
-
 void setup() {
 	Serial.begin(9600);
 #ifdef _DxEBUG
@@ -99,7 +97,6 @@ void setup() {
 
 	// start ir receiver
 	irrecv.enableIRIn();
-	
 
 	panel.println(VERSION);
 
@@ -145,27 +142,13 @@ void setup() {
 
 	panel.clearTime();
 
-	//sensor.requestTemperaturesByIndex(0);
-	DPRINTF("temp: %03.1f *C\n",sensor.getTempCByIndex(0));
+//	sensor.requestTemperatures();
+//	DPRINTF("temp: %03.1f *C\n",sensor.getTempCByIndex(0));
 	//clock.setMode(Clock::TEMP);
 	//clock.update(millis());
-	clock.writeTemp(sensor.getTempCByIndex(0));
-	delay(5000);
+//	clock.writeTemp(sensor.getTempCByIndex(0));
+//	delay(5000);
 
-
-
-/*
-  	clock.writeDigit(0,0,0,clock.digits);
-	delay(1000);
-	clock.writeDigit(0,17,6,clock.smallDigits);
-	delay(1000);
-	clock.writeDigit(0,35,0,clock.digits);
-
-	delay(5000);
-	panel.clearTime();
-	clock.writeText("123:.7",0,0,clock.digits);
-	delay(5000);
-*/
 	//pinMode(PIN_LED1,OUTPUT);
 	//rtc.adjust(DateTime(__DATE__, __TIME__));
 }
@@ -188,6 +171,7 @@ void reloadConfig() {
 	dateMode = menu.getOption(SET_DATE_MODE);
 	tempMode = menu.getOption(SET_TEMP_MODE);
 	animation.setFskMode(menu.getOption(FSK_MODE));
+	animation.setRandomOrder(menu.getOption(ANIORDER_MODE)==1);
 	clock.setHour24(menu.getOption(H2412_MODE)==MODE_24H);
 	clock.setBlinkingTick(menu.getOption(BLINK_MODE)==BLINK_ON);
 }

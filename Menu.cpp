@@ -75,7 +75,7 @@ const char* mmText[] = {
 };
 
 
-Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd) :
+Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd, Animation* ani) :
 		panel( panel ), clock(clock), sd(sd)
 		,menuButton(PIN_BTN1, BUTTON_MENU, this)
 		//,selButton(PIN_B2, BUTTON_SEL,this)
@@ -151,12 +151,15 @@ void Menu::notifyEvent(unsigned long event) {
 	switch( event ) {
 		case RED_BUT:
 			panel->setAnimationColor(0);
+			DPRINTF("panel->setAnimationColor(%d)\n", 0 );
 			break;
 		case GREEN_BUT:
 			panel->setAnimationColor(1);
+			DPRINTF("panel->setAnimationColor(%d)\n", 1 );
 			break;
 		case AMBER_BUT:
 			panel->setAnimationColor(2);
+			DPRINTF("panel->setAnimationColor(%d)\n", 2 );
 			break;
 		case CLOCK_RED:
 			panel->setTimeColor(0);
@@ -273,7 +276,6 @@ void Menu::buttonReleased(uint8_t n, bool longClick) {
 void Menu::enterMenu() {
 	loadOptions();
 	panel->clear();
-	clock->clear();
 	redrawNeeded=true;
 	active=true;
 }
@@ -290,6 +292,18 @@ void Menu::redrawMenu() {
 		panel->writeText("Config Menu",0,0,16);
 		panel->writeText(mmText[i],0,8,16);
 		panel->writeText(op,0,16,16);
+		/* farb streifen
+		if( actMenu == SET_COLOR_CLOCK) {
+			if( actOption<15) {
+				panel->drawRect(0,24,128,8,actOption+1);
+			} else {
+				for( int i = 0; i < 15; i++ ) {
+					panel->drawRect(i*8,24,8,8,i+1);
+				}
+			}
+		} else {
+			panel->drawRect(0,24,128,8,0);
+		}*/
 	}
 }
 

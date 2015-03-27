@@ -16,7 +16,9 @@
 class LEDMatrixPanel {
 public:
 	LEDMatrixPanel(uint8_t a, uint8_t b, uint8_t c, uint8_t d,
-		    uint8_t sclk, uint8_t latch, uint8_t oe, uint8_t width, uint8_t height, uint8_t planes, uint8_t colorChannels);
+		    uint8_t sclk, uint8_t latch, uint8_t oe,
+		    uint8_t width, uint8_t height, uint8_t planes,
+		    uint8_t colorChannels, bool useDoubleBuffering);
 
 	virtual ~LEDMatrixPanel();
 
@@ -39,6 +41,7 @@ public:
 	void setTimeBrightness(uint8_t bright) { timeBright = bright;}
 
 	void setPixel(uint8_t x, uint8_t y, uint8_t v);
+	void drawRect(int x, int y, int w, int h, int col );
 
 	void writeText(const char* text, uint8_t x, uint8_t y, int len);
 	void println(const char* text);
@@ -69,9 +72,14 @@ public:
 		this->brightness = brightness;
 	}
 
+	// used for double buffering
+	void swap( bool vsync );
+	bool bufFree( );
+
 private:
 
 	void selectPlane();
+	void swapInternal();
 
 	// extended to uint32_t to match 32 bit architecture
 	// PORT register pointers, pin bitmasks, pin numbers:
@@ -86,6 +94,10 @@ private:
 
 	volatile uint8_t timeBright;
 	volatile uint8_t **buffptr; // array of back buffers
+
+	volatile bool swapPending;
+	volatile uint8_t bufoffset;
+	bool useDoubleBuffering;
 
     uint16_t duration;
 
@@ -103,9 +115,8 @@ private:
 	char textbuffer[4][16]; // text buffer for text output (boot / menü)
 	uint8_t col, row;
 
-#define NSCAN 10
-
-	uint8_t scan[NSCAN];
+//#define NSCAN 10
+//	uint8_t scan[NSCAN];
 
 	volatile uint32_t isrCalls;
 

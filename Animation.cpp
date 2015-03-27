@@ -111,26 +111,44 @@ void Animation::skipAllFrames(File& f) {
 	for( int i = 0; i < numberOfFrames; i++) {
 		DPRINTF("skipping frame: %d\n", i);
 		uint16_t len = f.read()*256+f.read();
+		uint16_t delay = f.read()*256+f.read(); // new in version 1.02
+		byte numberOfPlanes = ani.read();
 		byte buf[len];
-		f.readBytes(buf, len);
-		f.readBytes(buf, len);
+		for( int i = 0; i < numberOfPlanes; i++) {
+			byte planeType = ani.read();
+			f.readBytes(buf, len);
+		}
 	}
 }
 
-void Animation::readNextFrame(long now, bool mask) {
+uint16_t Animation::readNextFrame(long now, bool maskClock) {
 	uint16_t buflen = ani.read()*256+ani.read();
-	if( panel.getSizeOfBufferInByte() == buflen ) {
+	uint16_t delay = ani.read()*256+ani.read();
+	byte numberOfPlanes = ani.read();
+	for( int i = 0; i < numberOfPlanes; i++) {
 		byte buf[buflen];
-		int r = ani.readBytes(buf, buflen);
-		if( mask ) clock.writeTime(now,buf);
-		memmove((void*)panel.getBuffers()[0],buf,buflen);
-		r += ani.readBytes(buf, buflen);
-		if( mask ) clock.writeTime(now,buf);
-		memmove((void*)panel.getBuffers()[1],buf,buflen);
-		//      Serial.print("reading 2 buffers len: ");Serial.print(buflen);Serial.println(r);
-		//		Serial.print("reading frame: ");Serial.println(actFrame);
+		byte planeType = ani.read();
+		if( panel.getSizeOfBufferInByte() == buflen ) {
+			ani.readBytes(buf, buflen);
+			if( planeType == 0x6D ) { // masking plane for time
+				clock.writeTime(now); // render time
+				byte* pDst = (byte*)panel.getBuffers()[2]; // clockplane
+				byte* pMask = buf; // clockplane
+				for(int j = 0; j< buflen; j++) {
+					*pDst = *pDst & *pMask++; // mask out
+					pDst++;
+				}
+			} else {
+				if( maskClock ) clock.writeTime(now,buf);
+				if( planeType < panel.getNumberOfBuffers()) {
+					memcpy((void*)panel.getBuffers()[planeType],buf,buflen);
+				}
+			}
+		}
 	}
+	panel.swap(true);
 	actFrame++;
+	return delay;
 }
 
 boolean Animation::update(long now) {
@@ -142,7 +160,6 @@ boolean Animation::update(long now) {
 			panel.clear();
 			return true;
 		}
-		nextAnimationUpdate = now + refreshDelay;
 		if( actFrame==0 ) {
 			if( actAnimation >= numberOfAnimations ) {
 				ani.seek(8); // reset
@@ -151,7 +168,9 @@ boolean Animation::update(long now) {
 			readNextAnimation();
 		}
 
-		readNextFrame(now, clockInFront);
+		uint16_t delay = readNextFrame(now, clockInFront);
+		nextAnimationUpdate = now + (delay>0?delay:refreshDelay);
+
 		if( actFrame >= clockFrom ) {
 			if( clockSmall ) {
 				clock.setXoffset(xoffset);

@@ -16,7 +16,7 @@ public:
 	Animation(SDClass& sd, LEDMatrixPanel& panel, Clock& clock);
 	virtual ~Animation();
 	void readNextAnimation();
-	void readNextFrame(long now, bool mask);
+	uint16_t readNextFrame(long now, bool mask);
 	boolean update(long now);
 	boolean begin();
 	void setFskMode(int mode);
@@ -42,7 +42,7 @@ protected:
 	uint8_t cycles;
 	uint8_t holdCycles;
 	uint32_t actFilePos;
-	uint8_t refreshDelay;
+	uint16_t refreshDelay;
 	uint16_t clockFrom;
 	uint16_t xoffset;
 	uint16_t yoffset;
@@ -57,7 +57,6 @@ protected:
 
 	boolean randomOrder;
 	boolean seenAllAnimations; // switches to true, when all animations scanned in the first run
-
 };
 
 #endif /* ANIMATION_H_ */

@@ -16,6 +16,7 @@
 #include "Clock.h"
 #include "Animation.h"
 #include "Menu.h"
+#include "PirHandler.h"
 #include "debug.h"
 
 #define DS18B20_PIN CON2_1
@@ -31,26 +32,29 @@
 #define WIDTH 128
 #define HEIGHT 32
 #define PLANES 16
-#define COLORCHANNELS 1
+#define COLORCHANNELS 2
 
 #define INTERNAL_SD_SELECT 51
 
 #define RECV_PIN CON1_14
 #define PIR_PIN CON1_15
 
-LEDMatrixPanel panel( A,B,C,D, CLK, LAT, OE, WIDTH, HEIGHT, PLANES, COLORCHANNELS);
+LEDMatrixPanel panel( A,B,C,D, CLK, LAT, OE, WIDTH, HEIGHT, PLANES,
+		COLORCHANNELS, false);
 
 OneWire oneWire(DS18B20_PIN);          // OneWire Referenz setzen
 DallasTemperature sensor(&oneWire);   // DS18B20 initialisieren
 RTC_DS1307 rtc;
 
 Clock clock(panel, rtc, &SD, &sensor);
-Menu menu(&panel, &clock, &SD);
+Animation animation(SD, panel, clock);
+
+Menu menu(&panel, &clock, &SD, &animation);
 
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 
-Animation animation(SD, panel, clock);
+PirHandler pir(PIR_PIN);
 
 long nextPixel = 0;
 int x = 0;
@@ -68,7 +72,7 @@ extern "C"
   }
 }
 
-void plotPoints() {
+/*void plotPoints() {
 	int v = 1;
 	while( true ) {
 		for( y = 0; y<32;y++) {
@@ -79,7 +83,7 @@ void plotPoints() {
 		}
 		v ^= 1;
 	}
-}
+}*/
 
 void setup() {
 	Serial.begin(9600);
@@ -132,24 +136,20 @@ void setup() {
 		panel.println("*.ani not found");
 	}
 
+	if(digitalRead(PIN_BTN1)) {
+		//selftest();
+	}
+
 	sensor.begin();
 	DPRINTF("sensors found: %d\n",sensor.getDeviceCount());
 
-	pinMode(PIR_PIN,OUTPUT);
 	//plotPoints();
 
 	panel.clear();
-
 	panel.clearTime();
 
-//	sensor.requestTemperatures();
-//	DPRINTF("temp: %03.1f *C\n",sensor.getTempCByIndex(0));
-	//clock.setMode(Clock::TEMP);
-	//clock.update(millis());
-//	clock.writeTemp(sensor.getTempCByIndex(0));
-//	delay(5000);
-
 	//pinMode(PIN_LED1,OUTPUT);
+
 	//rtc.adjust(DateTime(__DATE__, __TIME__));
 }
 
@@ -160,7 +160,7 @@ int tempMode = 0;
 
 // TODO no global function this way
 void reloadConfig() {
-	panel.setAnimationColor(menu.getOption(SET_COLOR_ANI));
+	panel.setAnimationColor(menu.getOption(SET_COLOR_ANI)+1);
 	panel.setTimeColor(menu.getOption(SET_COLOR_CLOCK));
 	panel.setBrightness(menu.getOption(SET_BRIGHTNESS));
 
@@ -176,20 +176,14 @@ void reloadConfig() {
 	clock.setBlinkingTick(menu.getOption(BLINK_MODE)==BLINK_ON);
 }
 
-void drawRect(int x, int y, int w, int h, int col ) {
-	for(int xi = x; xi < x+w; xi++ ) {
-		for( int yi=y; yi < y+h; yi++ ) {
-			panel.setPixel(xi,yi,col);
-		}
-	}
-}
-
 void testScreen() {
-	drawRect(0,0,32,32,1);
-	drawRect(32,0,32,32,2);
-	drawRect(64,0,32,32,3);
+	for( int col = 0; col<16; col++) {
+		panel.drawRect(col*8,0,8,32,col);
+	}
 	while(true);
 }
+
+// push main loop behaviour to class
 
 // states
 enum State { showTime, showDate, showAni, showMenu, freeze,
@@ -212,12 +206,8 @@ void loop() {
 	long switchToTime = 0;
 	int dateShowCount = 0;
 
-	boolean pir = false; // true / high means active
-
 	while(true) {
 		long now = millis();
-
-		//clock.setMode(Clock::TEMP);
 
 		if( irrecv.decode(&results) ) {
 			menu.notifyEvent(results.value);
@@ -231,11 +221,7 @@ void loop() {
 			//digitalWrite(PIN_LED1,on);		
 		}
 
-		pir = digitalRead(PIR_PIN);
-		if( pir == false && menu.getOption(SET_PIR_MODE) != 0 ) {
-			state = pirNobodyThere;
-		}
-
+		pir.update(now);
 		clock.update(now);
 		menu.update(now);
 
@@ -248,8 +234,31 @@ void loop() {
 		case showTime:
 			clock.on();
 			if( now > switchToAni ) {
-				state = showAni;
-				clock.off();
+				if(pir.somebodyHere()) {
+					state = showAni;
+					clock.off();
+					panel.setBrightness(menu.getOption(SET_BRIGHTNESS));
+				} else {
+					switch( menu.getOption(SET_PIR_MODE) ) {
+					case PIR_DIM:
+						panel.setBrightness(1);
+						// run through is intended
+					case PIR_INACTIVE:
+						state = showAni;
+						clock.off();
+						break;
+					case PIR_NOANI:
+						switchToAni = now + clockShowTime;
+						// TODO check date show
+						// define transitions as methods
+						break;
+					case PIR_SWITCHOFF:
+						clock.off();
+						panel.clear();
+						state = pirNobodyThere;
+						break;
+					}
+				}
 			}
 			if( dateMode==0 && now > switchToDate ) {
 				state = showDate;
@@ -284,7 +293,6 @@ void loop() {
 		case showAni:
 			if( animation.update(now) ) { // true means ani finished
 				switchToAni = now + clockShowTime; // millis to show clock
-				clock.on();
 				state = showTime;
 				if( dateMode == 1 ) {
 					switchToDate = now + clockShowTime/2; // nach der halben Zeit kommt das Datum
@@ -299,16 +307,11 @@ void loop() {
 			}
 			break;
 		case pirNobodyThere:
-			if( pir ) {
-				clock.off();
-				state = showAni;
-			} else {
-				int mode = menu.getOption(SET_PIR_MODE);
-				if( mode == PIR_NOANI || mode == PIR_DIM ) {
-					// TODO leave clock as dimmed
-					clock.on();
-				} else {
-					clock.off();
+			if( pir.somebodyHere()) {
+				switchToAni = now + clockShowTime; // millis to show clock
+				state = showTime;
+				if( dateMode == 1 ) {
+					switchToDate = now + clockShowTime/2; // nach der halben Zeit kommt das Datum
 				}
 			}
 			break;
@@ -318,5 +321,26 @@ void loop() {
 		}
 		
 	}
+}
+
+void waitBut() {
+	panel.println("press button");
+	while(digitalRead(PIN_BTN1)==HIGH);
+	while(digitalRead(PIN_BTN1)==LOW);
+	while(digitalRead(PIN_BTN1)==HIGH);
+}
+
+void selftest() {
+	panel.println("SELFTEST");
+	panel.println(VERSION);
+	waitBut();
+	panel.println("PANELTEST");
+	panel.println("press but to cont");
+	waitBut();
+	//panel test
+	panel.println("IR TEST");
+	panel.println("press buttons");
+	// loop to receive
 
 }
+

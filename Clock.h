@@ -47,8 +47,6 @@ public:
 
 	void off();
 
-	void clear();
-
 	boolean begin();
 
 	boolean isClockOn() {

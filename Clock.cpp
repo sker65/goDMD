@@ -14,7 +14,7 @@
 
 
 #define maxBrightness 2
-#define clockPlane 2
+//#define clockPlane 2
 
 
 Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc, SDClass* sd,
@@ -100,7 +100,7 @@ void Clock::adjust(DateTime* dt) {
  */
 void Clock::update(long now) {
 	if (nextRtcSync < now) {
-		nextRtcSync = now + 30L * 60L * 1000L;  // 30 min
+		nextRtcSync = now + 10L * 60L * 1000L;  // 10 min
 		n = rtc->now();
 		lastRtcSync = millis();
 	}
@@ -193,14 +193,14 @@ void Clock::writeDate(long now, byte* buffer) {
 }
 
 void Clock::formatTime(char* time, long now) {
-	DateTime dateTime(n.unixtime() + ( (millis() - lastRtcSync) / 1000 ));
+	DateTime dateTime(n.unixtime() + ( (now - lastRtcSync) / 1000 ));
 	boolean tick = !blinkingTick ? true : (now % 1000) > 500;
 	int hour = dateTime.hour();
 	if( !hour24 ) {
 		if( hour == 0 ) hour = 12;
 		else if( hour > 12 ) hour -= 12;
 	}
-	if (mode==TIME) {
+	if (mode==TIME || font == Small) { // small display always without seconds
 		sprintf(time,tick?"%02d:%02d":"%02d %02d",
 				hour,dateTime.minute());
 	} else {
@@ -224,19 +224,12 @@ void Clock::writeTime(long now, byte* buffer) {
 	}
 }
 
-void Clock::clear() {
-	volatile byte* p = panel.getBuffers()[clockPlane];
-	volatile byte* pend = p + panel.getSizeOfBufferInByte();
-	while (p < pend) {
-		*p++ = 0xFF;
-	}
-}
 
 void Clock::off() {
 	if (active) {
 		active = false;
 		panel.setTimeBrightness(0);
-		clear();
+		panel.clearTime();
 	}
 }
 

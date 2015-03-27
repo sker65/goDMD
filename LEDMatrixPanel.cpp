@@ -6,7 +6,7 @@
  */
 
 #include "LEDMatrixPanel.h"
-
+#include "debug.h"
 
 // use this to control the color resolution per pixel per color channel
 #define bitsPerPixel 2
@@ -78,7 +78,7 @@ static LEDMatrixPanel *activePanel = NULL;
 
 LEDMatrixPanel::LEDMatrixPanel(uint8_t a, uint8_t b, uint8_t c, uint8_t d,
 		uint8_t sclk, uint8_t latch, uint8_t oe, uint8_t width, uint8_t height,
-		uint8_t planes, uint8_t colorChannels) {
+		uint8_t planes, uint8_t colorChannels, bool useDoubleBuffering) {
 
 	// Save pin numbers for use by begin() method later.
 	_a = a;
@@ -123,7 +123,7 @@ LEDMatrixPanel::LEDMatrixPanel(uint8_t a, uint8_t b, uint8_t c, uint8_t d,
 	// byte align width
 	buffersize = width / 8 * height;
 
-	nBuffers = bitsPerPixel * colorChannels + 1;
+	nBuffers = bitsPerPixel * colorChannels + 1; // one for time buffer
 
 	plane = 0;
 	actBuffer = 0;
@@ -140,7 +140,8 @@ LEDMatrixPanel::LEDMatrixPanel(uint8_t a, uint8_t b, uint8_t c, uint8_t d,
 			textbuffer[r][c] = ' ';
 		}
 	}
-	scan = { 0,1,2,1,2,0,1,0,1,0 };
+	this->useDoubleBuffering = useDoubleBuffering;
+	//scan = { 0,1,2,1,2,0,1,0,1,0 };
 }
 
 LEDMatrixPanel::~LEDMatrixPanel() {
@@ -150,11 +151,14 @@ LEDMatrixPanel::~LEDMatrixPanel() {
 
 void LEDMatrixPanel::begin() {
 
-    this->buffptr = (volatile uint8_t**) malloc(sizeof(*buffptr) * nBuffers);
-	for (int i = 0; i < nBuffers; i++) {
+	// double
+    this->buffptr = (volatile uint8_t**) malloc(sizeof(*buffptr) * nBuffers * (useDoubleBuffering?2:1));
+
+    for (int i = 0; i < nBuffers*(useDoubleBuffering?2:1); i++) {
 		buffptr[i] = (volatile uint8_t*) malloc(buffersize);
-		Serial.print("buffer");Serial.print(i,DEC);Serial.print(" at ");Serial.println((long)buffptr[i],HEX);
-		memset((void*)buffptr[i], 0xFF, buffersize);
+		DPRINTF("buffer %d at 0x%08x",i,(unsigned int)buffptr[i]);
+		// delete buffer
+		memset((void*)buffptr[i], 0x00, buffersize);
 	}
 
 	
@@ -218,6 +222,19 @@ void LEDMatrixPanel::setupTimer() {
 #endif
 }
 
+void LEDMatrixPanel::swap(bool vsync) {
+	if( useDoubleBuffering ) {
+		if( vsync ) this->swapPending = true;
+		else swapInternal();
+	}
+}
+
+void LEDMatrixPanel::swapInternal() {
+	if( bufoffset == 0 ) bufoffset = nBuffers;
+	else bufoffset = 0;
+	swapPending = false;
+}
+
 void LEDMatrixPanel::selectPlane() {
 	// output new plane address
 	if (plane & 0x1)
@@ -277,8 +294,8 @@ void LEDMatrixPanel::updateScreen() {
 
 	volatile uint8_t *ptr, *ptr1;
 
-	ptr =  buffptr[actBuffer] + plane * (width / 8);
-	ptr1 =  buffptr[actBuffer] + 256 + plane * (width / 8);
+	ptr =  buffptr[actBuffer+bufoffset] + plane * (width / 8);
+	ptr1 =  buffptr[actBuffer+bufoffset] + 256 + plane * (width / 8);
 
 	//volatile uint32_t *bptr = (volatile uint32_t *)ptr, *bptr1 = (volatile uint32_t *bptr1;
 	// DPRINTF("Buffer adress for plane: %d actBuffer: %d is 0x%08x", plane, actBuffer, ptr);
@@ -292,9 +309,9 @@ void LEDMatrixPanel::updateScreen() {
 	}
 
 	for (uint8_t xb = 0; xb < width / 8; xb++) { // weil 2 bits geshifted wird
-		uint8_t b1 = *ptr++;
-		uint8_t b2 = *ptr1++;
-		for (int j = 0; j < 8; j++) { // nur 4 shifts da pro ausgabe 2 pixel
+		uint8_t b1 = ~ *ptr++;
+		uint8_t b2 = ~ *ptr1++;
+		for (int j = 0; j < 8; j++) {
 
 // eigentlich nicht platform abhängig sondern nur hinsichtlich der Lage der Bits auf den Ports
 // beim Mega sind es die oberen 4 bit des ersten bytes (port ist nur 8 Bit)
@@ -346,21 +363,19 @@ void LEDMatrixPanel::updateScreen() {
 	digitalWrite(_latch,HIGH);
 
 	duration = 600;
-    if( actBuffer==1 ) duration += 1600;
+    if( actBuffer==1 ) duration += 1300;
 	if( actBuffer==2 ) duration +=timeBright*800;
 
 	plane++;
 	if (plane >= planes) {
 		plane = 0;
-		/*bIndex++;
-		if( bIndex == NSCAN ) {
-			bIndex = 0;
-		}
-		actBuffer = scan[bIndex];
-		*/
 		actBuffer++;
 		if (actBuffer >= nBuffers) {
 			actBuffer = 0;
+			// vsync
+			if( useDoubleBuffering && swapPending ) {
+				swapInternal();
+			}
 		}
 	}
 
@@ -420,65 +435,44 @@ void LEDMatrixPanel::disableLEDs() {
 }
 
 volatile uint8_t** LEDMatrixPanel::getBuffers() {
-	return buffptr;
+	return &( buffptr[bufoffset] );
 }
 
-// masken zum setzen von pixeln
-uint8_t mask [] = {
-		0b01111111,
-		0b11011111,
-		0b11110111,
-		0b11111101,
-
-		0b10111111,
-		0b11101111,
-		0b11111011,
-		0b11111110
-
-};
-
 void LEDMatrixPanel::setPixel(uint8_t x, uint8_t y, uint8_t v) {
-	uint8_t bitpos = 0;
 	int yoffset = y * (width/8);
-//	if( y >= height/2) {
-//		bitpos = 4;
-//		yoffset = (y - height/2 ) * (width/4);
-//	}
-
-	uint8_t* ptr =  (uint8_t *) buffptr[0] + yoffset  + x/8;
-	uint8_t pix = *ptr;
-	uint8_t* ptr1 =  (uint8_t *) buffptr[1] + yoffset  + x/8;
-	uint8_t pix1 = *ptr1;
-
 	uint8_t mask = ~( 128 >> (x%8));
 
-	if( v==1 ) {
-		*ptr = pix & mask;//[(x&3)+bitpos];
-		*ptr1 = pix1 | ~ mask;//[(x&3)+bitpos];
-	} else if (v==2) {
-		*ptr = pix | ~ mask;//[(x&3)+bitpos];
-		*ptr1 = pix1 & mask;//[(x&3)+bitpos];
-	} else if (v==3) {
-		*ptr = pix & mask;//[(x&3)+bitpos];
-		*ptr1 = pix1 & mask;//[(x&3)+bitpos];
-	} else if( v== 0) {
-		*ptr = pix | ~ mask;//[(x&3)+bitpos];
-		*ptr1 = pix1 | ~ mask;//[(x&3)+bitpos];
+	for( int plane = 0; plane<nBuffers; plane++) {
+		uint8_t* ptr =  (uint8_t *) buffptr[plane] + yoffset  + x/8;
+		uint8_t pix = *ptr;
+		if( v & (1<<plane)) {
+			*ptr = pix | ~ mask;
+		} else {
+			*ptr = pix & mask;
+		}
 	}
 
 }
 
+
+void LEDMatrixPanel::drawRect(int x, int y, int w, int h, int col ) {
+	for(int xi = x; xi < x+w; xi++ ) {
+		for( int yi=y; yi < y+h; yi++ ) {
+			setPixel(xi,yi,col);
+		}
+	}
+}
+
+
 void LEDMatrixPanel::clear() {
-	for( int i = 0; i<buffersize; i++) {
-		buffptr[0][i]=0xff;
-		buffptr[1][i]=0xff;
+	for( int i = 0; i<nBuffers; i++) {
+		// delete buffer
+		memset((void*)buffptr[i], 0x00, buffersize);
 	}
 }
 
 void LEDMatrixPanel::clearTime() {
-	for( int i = 0; i<buffersize; i++) {
-		buffptr[clockPlane][i]=0xff;
-	}
+	memset((void*)buffptr[clockPlane], 0x00, buffersize);
 }
 
 // font mit 96 ascii zeichen ab 32 - 128
@@ -644,3 +638,5 @@ void LEDMatrixPanel::setTimeColor(uint8_t col) {
 void LEDMatrixPanel::setAnimationColor(uint8_t col) {
 	this->aniColor = col;
 }
+
+

@@ -49,7 +49,7 @@ RTC_DS1307 rtc;
 Clock clock(panel, rtc, &SD, &sensor);
 Animation animation(SD, panel, clock);
 
-Menu menu(&panel, &clock, &SD, &animation);
+Menu menu(&panel, &clock, &SD);
 
 IRrecv irrecv(RECV_PIN);
 decode_results results;
@@ -71,6 +71,28 @@ extern "C"
    Serial.write(s);
   }
 }
+
+void waitBut() {
+	panel.println("press button");
+	while(digitalRead(PIN_BTN1)==HIGH);
+	while(digitalRead(PIN_BTN1)==LOW);
+	while(digitalRead(PIN_BTN1)==HIGH);
+}
+
+void selftest() {
+	panel.println("SELFTEST");
+	panel.println(VERSION);
+	waitBut();
+	panel.println("PANELTEST");
+	panel.println("press but to cont");
+	waitBut();
+	//panel test
+	panel.println("IR TEST");
+	panel.println("press buttons");
+	// loop to receive
+
+}
+
 
 /*void plotPoints() {
 	int v = 1;
@@ -136,8 +158,8 @@ void setup() {
 		panel.println("*.ani not found");
 	}
 
-	if(digitalRead(PIN_BTN1)) {
-		//selftest();
+	if(digitalRead(PIN_BTN1)==FALSE) {
+		selftest();
 	}
 
 	sensor.begin();
@@ -189,6 +211,7 @@ void testScreen() {
 enum State { showTime, showDate, showAni, showMenu, freeze,
 	pirNobodyThere,
 };
+
 
 void loop() {
 	long now = millis();
@@ -321,26 +344,5 @@ void loop() {
 		}
 		
 	}
-}
-
-void waitBut() {
-	panel.println("press button");
-	while(digitalRead(PIN_BTN1)==HIGH);
-	while(digitalRead(PIN_BTN1)==LOW);
-	while(digitalRead(PIN_BTN1)==HIGH);
-}
-
-void selftest() {
-	panel.println("SELFTEST");
-	panel.println(VERSION);
-	waitBut();
-	panel.println("PANELTEST");
-	panel.println("press but to cont");
-	waitBut();
-	//panel test
-	panel.println("IR TEST");
-	panel.println("press buttons");
-	// loop to receive
-
 }
 

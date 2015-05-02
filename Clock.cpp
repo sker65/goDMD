@@ -145,13 +145,13 @@ void dumpDigit(Digit* d) {
 	}
 }
 
-int Clock::writeDigit(int digit, int x, int y, Digit* charset ) {
+int Clock::writeDigit(int digit, int x, int y, Digit* charset, byte* buffer ) {
 	Digit d = charset[digit];
 	//DPRINTF("write digit: %d, pos: %d\n", digit, x);
 	int srow = 0;
 	for (int row = y; row < min(y+d.height,panel.getHeight()); row++) {
 		volatile uint8_t* src = d.data + srow++ * (d.width/8);
-		volatile uint8_t* pdest = panel.getBuffers()[clockPlane]
+		volatile uint8_t* pdest = (buffer==NULL ? panel.getBuffers()[2] : buffer)
 		                                             + (row*(panel.getWidth()/8)) + x/8;
 		_BS_blt( _BS_alu_copy, (volatile uint8_t* )pdest, x%8,
 				(volatile uint8_t* )src, 0, d.width);
@@ -168,7 +168,7 @@ void Clock::writeText(const char* text, int x, int y, Digit* charset, byte* buff
 		if( q ) {
 			//DPRINTF("char: %ld\n", q-b );
 			// breite in bytes = digits[q-p].width / 4;
-			xo = writeDigit(q-b,xo,y,charset);
+			xo = writeDigit(q-b,xo,y,charset, buffer);
 		}
 		p++;
 	}
@@ -209,18 +209,22 @@ void Clock::formatTime(char* time, long now) {
 	}
 }
 
+void Clock::writeTimeIntern(long now, byte* buffer) {
+	char time[10];
+	formatTime(time,now);
+	switch(font) {
+	case Big:
+		writeText(time,(mode==TIMESEC) ? 10 : 28,0,digits,buffer);
+		break;
+	case Small:
+		writeText(time,xoffset,yoffset,smallDigits,buffer);
+		break;
+	}
+}
+
 void Clock::writeTime(long now, byte* buffer) {
 	if (active) {
-		char time[10];
-		formatTime(time,now);
-		switch(font) {
-		case Big:
-			writeText(time,(mode==TIMESEC) ? 10 : 28,0,digits,buffer);
-			break;
-		case Small:
-			writeText(time,xoffset,yoffset,smallDigits,buffer);
-			break;
-		}
+		writeTimeIntern(now,buffer);
 	}
 }
 

@@ -36,6 +36,7 @@ public:
 	void on();
 	// writes actual time (optinally with seconds)
 	void writeTime(long now, byte* buffer = NULL);
+	void writeTimeIntern(long now, byte* buffer=NULL);
 	// writes date
 	void writeDate(long now, byte* buffer = NULL);
 	// writes temperature
@@ -57,7 +58,7 @@ public:
 	void setMode( Mode newMode);
 	Mode getMode() const { return mode; }
 	//void writeDigit(int digit, int xoffset, uint8_t nBytes, byte* buffer = NULL);
-	int writeDigit(int digit, int x, int y, Digit* charset );
+	int writeDigit(int digit, int x, int y, Digit* charset, byte* buffer );
 	//int writeDoubleDigit(int digit, int x, byte* buffer);
 
 	Digit* digits;
@@ -66,6 +67,10 @@ public:
 	void setFont(Font font) {this->font = font;}
 	void setXoffset(uint16_t xo){ this->xoffset = xo; }
 	void setYoffset(uint16_t yo){ this->yoffset = yo; }
+
+	Font getFont() const {
+		return this->font;
+	}
 
 	boolean getBlinkingTick() const {
 		return blinkingTick;

@@ -60,8 +60,10 @@
 class SDClass;
 
 class Menu : public ClickHandler {
+
 public:
 	Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd);
+
 	virtual ~Menu();
 
 	void update(long now);

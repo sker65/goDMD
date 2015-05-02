@@ -252,12 +252,12 @@ void LEDMatrixPanel::selectPlane() {
 	else
 		*addrcport &= ~addrcpin;
 	
-	if (planes > 8) {
+	//if (planes > 8) {
 		if (plane & 0x8)
 			*addrdport |= addrdpin;
 		else
 			*addrdport &= ~addrdpin;
-	}
+	//}
 }
 
 #define CYCLE_DURATION 4000
@@ -465,10 +465,8 @@ void LEDMatrixPanel::drawRect(int x, int y, int w, int h, int col ) {
 
 
 void LEDMatrixPanel::clear() {
-	for( int i = 0; i<nBuffers; i++) {
-		// delete buffer
-		memset((void*)buffptr[i], 0x00, buffersize);
-	}
+	memset((void*)buffptr[0], 0x00, buffersize);
+	memset((void*)buffptr[1], 0x00, buffersize);
 }
 
 void LEDMatrixPanel::clearTime() {

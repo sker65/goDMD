@@ -51,6 +51,7 @@ protected:
 	uint32_t* aniIndex;
 
 	long nextAnimationUpdate;
+	boolean clearAfterAni;
 	boolean hold;
 	boolean clockInFront;
 	boolean clockSmall;

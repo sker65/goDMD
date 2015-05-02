@@ -18,6 +18,7 @@ sd(sd), panel(panel), clock(clock) {
 	numberOfFrames=0;
 	fskFilter = 18;
 	seenAllAnimations = false;
+	clearAfterAni = true;
 }
 
 boolean Animation::begin() {
@@ -95,6 +96,8 @@ void Animation::readNextAnimation() {
 		DPRINTF("number of frames: %d\n",numberOfFrames);
 		actFrame = 0;
 		actAnimation++;
+		clearAfterAni = true;
+
 		if( fsk <= fskFilter ) break;
 
 		skipAllFrames(ani);
@@ -121,24 +124,47 @@ void Animation::skipAllFrames(File& f) {
 	}
 }
 
+/**
+ * reads the next frame from animation stream and do masking of clock
+ * @param: now the actual time used for time / date rendering
+ * @maskClock: if set render clock in the background
+ * if animation stream contains a mask frame then clock is rendered
+ * and clock is masked out.
+ */
 uint16_t Animation::readNextFrame(long now, bool maskClock) {
 	uint16_t buflen = ani.read()*256+ani.read();
 	uint16_t delay = ani.read()*256+ani.read();
 	byte numberOfPlanes = ani.read();
+	// hold mask plane for transition
+	byte mask[buflen];
+	bool useMask = false;
 	for( int i = 0; i < numberOfPlanes; i++) {
 		byte buf[buflen];
 		byte planeType = ani.read();
 		if( panel.getSizeOfBufferInByte() == buflen ) {
-			ani.readBytes(buf, buflen);
-			if( planeType == 0x6D ) { // masking plane for time
-				clock.writeTime(now); // render time
-				byte* pDst = (byte*)panel.getBuffers()[2]; // clockplane
-				byte* pMask = buf; // clockplane
-				for(int j = 0; j< buflen; j++) {
-					*pDst = *pDst & *pMask++; // mask out
-					pDst++;
-				}
+			if( planeType == 0x6D ) { // 'm' for masking plane for time
+				ani.readBytes(mask, buflen);
+				useMask = true;
 			} else {
+				ani.readBytes(buf, buflen);
+				if( useMask ) {
+					clearAfterAni = false;
+					byte timebuf[buflen];
+					memset(timebuf,0,buflen);
+					clock.writeTimeIntern(now,timebuf); // render time
+					byte* pDst = timebuf;
+					byte* pMask = mask;
+					for(int j = 0; j< buflen; j++) {
+						*pDst &= ~( *pMask++ ); // mask in
+						pDst++;
+					}
+					memcpy((void*)panel.getBuffers()[2],timebuf,buflen);
+					pDst = buf;
+					pMask = mask;
+					for(int j = 0; j< buflen; j++) {
+						*pDst++ &= *pMask++; // mask out
+					}
+				}
 				if( maskClock ) clock.writeTime(now,buf);
 				if( planeType < panel.getNumberOfBuffers()) {
 					memcpy((void*)panel.getBuffers()[planeType],buf,buflen);
@@ -155,8 +181,16 @@ boolean Animation::update(long now) {
 	if( now> nextAnimationUpdate) {
 		if( hold ) {
 			hold = false;
-			clock.setFont(Clock::Big);
-			panel.clearTime();
+			// check font transition small to big, if so clear anyway
+			if( clock.getFont() == Clock::Small ) {
+				clock.setFont(Clock::Big);
+				panel.clearTime();
+			} else {
+				if( clearAfterAni ) {
+					panel.clearTime();
+				}
+			}
+
 			panel.clear();
 			return true;
 		}

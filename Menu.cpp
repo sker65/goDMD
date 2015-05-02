@@ -75,7 +75,7 @@ const char* mmText[] = {
 };
 
 
-Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd, Animation* ani) :
+Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd ) :
 		panel( panel ), clock(clock), sd(sd)
 		,menuButton(PIN_BTN1, BUTTON_MENU, this)
 		//,selButton(PIN_B2, BUTTON_SEL,this)
@@ -130,11 +130,13 @@ void Menu::update(long now) {
 // these are the codes from the IR receiver that the irrecv method decodes
 // must be adapted for the given ir controller
 
+#if 0
 // ani colors
-#define RED_BUT 0xE85952E1
+#define RED_BUT   0xE85952E1
 #define GREEN_BUT 0x78CDA4DD
 #define AMBER_BUT 0xA2672345
 
+// clock color
 #define CLOCK_RED 0xD3FD9A81	
 #define CLOCK_GREEN 0x6471EC7D
 #define CLOCK_AMBER 0x9D52009D
@@ -142,6 +144,23 @@ void Menu::update(long now) {
 #define SEL_BUT 0xA7315F7D
 #define OPTION_BUT 0xB9C07541
 #define MENU_BUT 0xdcc45be1
+#endif
+
+#include "ir-codes.h"
+
+#define RED_BUT   BUT_CH_MINUS
+#define GREEN_BUT BUT_CH
+#define AMBER_BUT BUT_CH_PLUS
+
+// clock color
+#define CLOCK_RED BUT_PREV
+#define CLOCK_GREEN BUT_NEXT
+#define CLOCK_AMBER BUT_PLAY
+
+#define SEL_BUT BUT_PLUS
+#define OPTION_BUT BUT_MINUS
+#define MENU_BUT BUT_EQ
+
 
 /**
  * IR Decoder notifies events here

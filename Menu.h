@@ -82,7 +82,7 @@ public:
 
 	uint8_t getOption(int index) {return option[index];}
 
-	void buttonReleased(uint8_t no, bool longPress);
+	void buttonReleased(uint8_t no, uint8_t longPress);
 
 	void notifyEvent(unsigned long event);
 

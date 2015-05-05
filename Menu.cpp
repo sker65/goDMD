@@ -190,13 +190,13 @@ void Menu::notifyEvent(unsigned long event) {
 			panel->setTimeColor(2);
 			break;
 		case MENU_BUT:
-			this->buttonReleased(BUTTON_MENU, true);
+			this->buttonReleased(BUTTON_MENU, 2);
 			break;
 		case OPTION_BUT:
-			this->buttonReleased(BUTTON_MENU, false);
+			this->buttonReleased(BUTTON_MENU, 0);
 			break;
 		case SEL_BUT:
-			this->buttonReleased(BUTTON_SEL, false);
+			this->buttonReleased(BUTTON_MENU, 1);
 			break;
 			
 	}
@@ -251,16 +251,16 @@ void Menu::loadOptions() {
  * one. must be fixed to implement one button control.
  * not needed actually as we have ir control support
  */
-void Menu::buttonReleased(uint8_t n, bool longClick) {
+void Menu::buttonReleased(uint8_t n, uint8_t longClick) {
 	DPRINTF("button %d %d \n", n, longClick);
 	if( active ) {
 		redrawNeeded = true;
-		if( n==BUTTON_MENU && longClick ) {
+		if( n==BUTTON_MENU && longClick==2 ) {
 			saveOption();
 			DPRINTF("leave menu\n");
 			leaveMenu();
 		}
-		if( n==BUTTON_MENU && !longClick ) {
+		if( n==BUTTON_MENU && longClick==1 ) {
 			// advance & save leaved menu
 			saveOption();
 
@@ -277,7 +277,7 @@ void Menu::buttonReleased(uint8_t n, bool longClick) {
 			if( actMenu<0 || actOption >= nOptions[actMenu] ) actOption = 0;
 			DPRINTF("trimmed actOption: %d\n", actOption);
 		}
-		if( n==BUTTON_SEL && !longClick ) {
+		if( n==BUTTON_MENU && longClick==0 ) {
 			actOption++;
 			if( actOption >= nOptions[actMenu]) {
 				actOption=0;
@@ -285,7 +285,7 @@ void Menu::buttonReleased(uint8_t n, bool longClick) {
 		}
 
 	} else {
-		if( n==BUTTON_MENU && longClick ) {
+		if( n==BUTTON_MENU && longClick==2 ) {
 			enterMenu();
 		}
 	}

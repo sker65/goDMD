@@ -61,7 +61,7 @@ int x = 0;
 int y = 0;
 bool on=false;
 
-#define VERSION "go dmd v1.0.1"
+#define VERSION "goDmd v1.01-rc1"
 
 // define a char out hook for printf
 extern "C"
@@ -74,7 +74,6 @@ extern "C"
 
 void waitBut() {
 	panel.println("press button");
-	while(digitalRead(PIN_BTN1)==HIGH);
 	while(digitalRead(PIN_BTN1)==LOW);
 	while(digitalRead(PIN_BTN1)==HIGH);
 }
@@ -84,12 +83,32 @@ void selftest() {
 	panel.println(VERSION);
 	waitBut();
 	panel.println("PANELTEST");
+	int col = 0;
+	int br = 1;
+	while( true ){
+		panel.setAnimationColor(col);
+		panel.drawRect(0,0,128,32,br++);
+		if( br == 4) { //  4
+			br = 1;
+			col++;
+			if( col == 3) col = 0;
+		}
+		delay(700);
+		if( digitalRead(PIN_BTN1)==FALSE ) break;
+	}
 	panel.println("press but to cont");
 	waitBut();
 	//panel test
 	panel.println("IR TEST");
 	panel.println("press buttons");
 	// loop to receive
+	if( irrecv.decode(&results) ) {
+		char buf[12];
+		sprintf(buf,"0x%08x",results.value);
+		panel.println(buf);
+		irrecv.resume();
+	}
+
 
 }
 
@@ -140,7 +159,7 @@ void setup() {
 	if( !SD.begin(INTERNAL_SD_SELECT) ){
 		DPRINTF("sd card begin failed\n");
 		panel.println("sd card failed");
-		delay(12000);
+		selftest();
 	} else {
 		DPRINTF("sd card begin success\n");
 		delay(500);
@@ -170,7 +189,7 @@ void setup() {
 	panel.clear();
 	panel.clearTime();
 
-	//pinMode(PIN_LED1,OUTPUT);
+	//pinMode(PIN_LED2,OUTPUT);
 
 	//rtc.adjust(DateTime(__DATE__, __TIME__));
 }
@@ -229,6 +248,8 @@ void loop() {
 	long switchToTime = 0;
 	int dateShowCount = 0;
 
+	uint32_t ledInterval = 3000;
+
 	while(true) {
 		long now = millis();
 
@@ -238,10 +259,10 @@ void loop() {
 		}
 		
 		// show with blinking led ISR is running
-		if( panel.getISRCalls() > 1500 ) {
+		if( panel.getISRCalls() > ledInterval ) {
 			panel.resetISRCalls();
 			on = !on;
-			//digitalWrite(PIN_LED1,on);		
+			//digitalWrite(PIN_LED2,on);
 		}
 
 		pir.update(now);
@@ -330,7 +351,9 @@ void loop() {
 			}
 			break;
 		case pirNobodyThere:
+			ledInterval = 6000;
 			if( pir.somebodyHere()) {
+				ledInterval = 3000;
 				switchToAni = now + clockShowTime; // millis to show clock
 				state = showTime;
 				if( dateMode == 1 ) {

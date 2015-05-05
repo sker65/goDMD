@@ -15,7 +15,7 @@ public:
 	ClickHandler();
 	virtual ~ClickHandler();
 
-	virtual void buttonReleased(uint8_t no, bool longPress)=0;
+	virtual void buttonReleased(uint8_t no, uint8_t howLong)=0;
 };
 
 #endif /* CLICKHANDLER_H_ */

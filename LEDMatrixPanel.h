@@ -78,7 +78,7 @@ public:
 
 private:
 
-	void selectPlane();
+	void selectPlane(uint8_t p);
 	void swapInternal();
 
 	// extended to uint32_t to match 32 bit architecture
@@ -116,7 +116,7 @@ private:
 	uint8_t col, row;
 
 //#define NSCAN 10
-//	uint8_t scan[NSCAN];
+	uint8_t scan[16];
 
 	volatile uint32_t isrCalls;
 

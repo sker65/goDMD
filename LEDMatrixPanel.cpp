@@ -141,7 +141,8 @@ LEDMatrixPanel::LEDMatrixPanel(uint8_t a, uint8_t b, uint8_t c, uint8_t d,
 		}
 	}
 	this->useDoubleBuffering = useDoubleBuffering;
-	//scan = { 0,1,2,1,2,0,1,0,1,0 };
+	//scan = { 0, 15, 1, 14, 2, 13, 3, 12, 4, 11, 5, 10, 6, 9, 7, 8 };
+	scan = { 0, 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 }
 
 LEDMatrixPanel::~LEDMatrixPanel() {
@@ -181,7 +182,7 @@ void LEDMatrixPanel::begin() {
 	pinMode(_c,OUTPUT);
 	pinMode(_d,OUTPUT);
 
-	selectPlane();
+	selectPlane(0);
 
 	// set data output bit to out
 	//DATADIR = !(255 >> ( bitsPerPixel * colorsChannels));
@@ -218,7 +219,7 @@ void LEDMatrixPanel::setupTimer() {
 	OpenTimer1( T1_ON | T1_SOURCE_INT | T1_PS_1_8, 1000);
 	// timer ein, internal source, prescaler 8 = 10 MHz, count 5000 => 2 Khz
 	ConfigIntTimer1( T1_INT_ON | T1_INT_PRIOR_2); \
-	INTEnableSystemMultiVectoredInt(); 
+	INTEnableSystemMultiVectoredInt();
 #endif
 }
 
@@ -235,32 +236,11 @@ void LEDMatrixPanel::swapInternal() {
 	swapPending = false;
 }
 
-void LEDMatrixPanel::selectPlane() {
-	// output new plane address
-	if (plane & 0x1)
-		*addraport |= addrapin;
-	else
-		*addraport &= ~addrapin;
-	
-	if (plane & 0x2)
-		*addrbport |= addrbpin;
-	else
-		*addrbport &= ~addrbpin;
-	
-	if (plane & 0x4)
-		*addrcport |= addrcpin;
-	else
-		*addrcport &= ~addrcpin;
-	
-	//if (planes > 8) {
-		if (plane & 0x8)
-			*addrdport |= addrdpin;
-		else
-			*addrdport &= ~addrdpin;
-	//}
+void LEDMatrixPanel::selectPlane(uint8_t p) {
+	LATB = (LATB & ~0x0F ) | p;
 }
 
-#define CYCLE_DURATION 4000
+#define CYCLE_DURATION 1000
 
 // this method will be called via the ISR 
 void LEDMatrixPanel::updateScreen() {
@@ -270,14 +250,14 @@ void LEDMatrixPanel::updateScreen() {
 
 	disableLEDs();
 
-	/*if( on && duration < CYCLE_DURATION ) {
+/*	if( on && duration < CYCLE_DURATION ) {
 		on = false;
 		duration = CYCLE_DURATION - duration;
 		resetTimer();
 		return;
 	}*/
 
-	selectPlane();
+	selectPlane(scan[plane]);
 
 	// shift out plane data
 
@@ -292,10 +272,12 @@ void LEDMatrixPanel::updateScreen() {
 
 	//uint8_t tick, tock;
 
-	volatile uint8_t *ptr, *ptr1;
+    uint8_t *ptr, *ptr1;
 
-	ptr =  buffptr[actBuffer+bufoffset] + plane * (width / 8);
-	ptr1 =  buffptr[actBuffer+bufoffset] + 256 + plane * (width / 8);
+    uint8_t o = scan[plane] << 4;
+
+	ptr =  (uint8_t *)buffptr[actBuffer+bufoffset] + o;
+	ptr1 = (uint8_t *) buffptr[actBuffer+bufoffset] + 256 + o;
 
 	//volatile uint32_t *bptr = (volatile uint32_t *)ptr, *bptr1 = (volatile uint32_t *bptr1;
 	// DPRINTF("Buffer adress for plane: %d actBuffer: %d is 0x%08x", plane, actBuffer, ptr);
@@ -362,15 +344,13 @@ void LEDMatrixPanel::updateScreen() {
 	//*latport |= latpin; // Latch up data loaded
 	digitalWrite(_latch,HIGH);
 
-	duration = 600;
-    if( actBuffer==1 ) duration += 1300;
-	if( actBuffer==2 ) duration +=timeBright*800;
+	duration = 100;
+    if( actBuffer==1 ) { duration += 400; }
+    else if( actBuffer==2 ) { duration +=timeBright*400; }
 
-	plane++;
-	if (plane >= planes) {
+	if (++plane >= planes) {
 		plane = 0;
-		actBuffer++;
-		if (actBuffer >= nBuffers) {
+		if (++actBuffer >= nBuffers) {
 			actBuffer = 0;
 			// vsync
 			if( useDoubleBuffering && swapPending ) {

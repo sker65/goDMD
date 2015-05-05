@@ -11,7 +11,8 @@
 #include "ClickHandler.h"
 
 #define DEBOUNCE 200
-#define LONGPRESS 1500
+#define LONGPRESS 1000
+#define SUPERLONGPRESS 3000
 
 class Button {
 public:

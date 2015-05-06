@@ -177,14 +177,12 @@ void setup() {
 		panel.println("*.ani not found");
 	}
 
-	if(digitalRead(PIN_BTN1)==FALSE) {
-		selftest();
-	}
-
 	sensor.begin();
 	DPRINTF("sensors found: %d\n",sensor.getDeviceCount());
 
-	//plotPoints();
+	if(digitalRead(PIN_BTN1)==FALSE) {
+		selftest();
+	}
 
 	panel.clear();
 	panel.clearTime();
@@ -215,6 +213,7 @@ void reloadConfig() {
 	animation.setRandomOrder(menu.getOption(ANIORDER_MODE)==1);
 	clock.setHour24(menu.getOption(H2412_MODE)==MODE_24H);
 	clock.setBlinkingTick(menu.getOption(BLINK_MODE)==BLINK_ON);
+	clock.requestFont(menu.getOption(CURRENT_FONT));
 }
 
 void testScreen() {

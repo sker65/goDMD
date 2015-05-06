@@ -1,6 +1,8 @@
 # goDMD
 
-Firmware for den pinguino micro zum bau einer goDmd Uhr
+Firmware for den pinguino micro zum bau einer goDmd Uhr.
+
+Blog mit Anleitungen und vielen weiter führenden Hinweisen auf http://go-dmd.de/
 
 # Setup der IDE
 

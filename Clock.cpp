@@ -31,6 +31,11 @@ Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc, SDClass* sd,
 	nextTempSync = 0;
 	blinkingTick = true;
 	hour24 = true;
+	actualFont = 0;
+	requestedFont = 0;
+	bigFontSize=0;
+	smallFontSize=0;
+	fontLoaded = false;
 }
 
 Clock::~Clock() {
@@ -67,21 +72,47 @@ void Clock::readFont(File* f, Digit* p, int _size) {
 
 }
 
-boolean Clock::begin() {
-	File f = sd->open("font.dat");
-	if( !f ) return false;
-	DPRINTF("reading font.dat\n");
-	// size of map -> how many chars
-	uint8_t size = f.read();
-	DPRINTF("big font uses %d chars\n",size);
-	digits = (Digit*)malloc(sizeof(Digit)*size);
-	readFont(&f, digits, size);
-	size = f.read();
-	smallDigits = (Digit*)malloc(sizeof(Digit)*size);
-	DPRINTF("small font uses %d chars\n",size);
-	readFont(&f, smallDigits, size);
-	f.close();
+/** free memory used by current font.*/
+boolean Clock::freeFont() {
+	if( fontLoaded ) {
+		DPRINTF("free front\n");
+		for( int i = smallFontSize-1; i>=0; i--) {
+			free(smallDigits[i].data);
+		}
+		for( int i = bigFontSize-1; i>=0; i--) {
+			free(digits[i].data);
+		}
+		free(smallDigits);
+		free(digits);
+	}
 	return true;
+}
+
+/**
+ * load font from file 'fontX.dat' where X is 0 .. n
+ */
+boolean Clock::loadFont(uint8_t n) {
+	char buf[10];
+	sprintf(buf,"font%d.dat",n);
+	File f = sd->open(buf);
+	if( !f ) return false;
+	DPRINTF("reading %s\n",buf);
+	// size of map -> how many chars
+	bigFontSize = f.read();
+	DPRINTF("big font uses %d chars\n",bigFontSize);
+	digits = (Digit*)malloc(sizeof(Digit)*bigFontSize);
+	readFont(&f, digits, bigFontSize);
+	smallFontSize = f.read();
+	smallDigits = (Digit*)malloc(sizeof(Digit)*smallFontSize);
+	DPRINTF("small font uses %d chars\n",smallFontSize);
+	readFont(&f, smallDigits, smallFontSize);
+	f.close();
+	fontLoaded=true;
+	return true;
+}
+
+boolean Clock::begin() {
+	return loadFont(actualFont);
 }
 
 void Clock::setMode( Mode newMode ) {
@@ -239,6 +270,17 @@ void Clock::off() {
 
 void Clock::on() {
 	if (!active) {
+		if( requestedFont != actualFont ) {
+			DPRINTF("Clock::on: req: %d, act: %d\n",requestedFont,actualFont);
+			freeFont();
+			if( loadFont(requestedFont) ) {
+				actualFont = requestedFont;
+			} else {
+				actualFont = requestedFont = 0;
+				loadFont(requestedFont);
+			}
+			DPRINTF("Clock::on: loaded %d\n",actualFont);
+		}
 		active = true;
 		brightness = 0;
 		update(millis());

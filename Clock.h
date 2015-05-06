@@ -61,6 +61,7 @@ public:
 	int writeDigit(int digit, int x, int y, Digit* charset, byte* buffer );
 	//int writeDoubleDigit(int digit, int x, byte* buffer);
 
+
 	Digit* digits;
 	Digit* smallDigits;
 
@@ -88,8 +89,21 @@ public:
 		this->hour24 = hour24;
 	}
 
+	void requestFont(uint8_t font) {
+		requestedFont = font;
+	}
+
+	uint8_t getActualFont() const {
+		return actualFont;
+	}
+
 protected:
 	void readFont(File* f, Digit* d, int size);
+	boolean loadFont(uint8_t);
+	boolean freeFont();
+	uint8_t bigFontSize;
+	uint8_t smallFontSize;
+	boolean fontLoaded;
 
 	RTC_DS1307* rtc;
 	SDClass* sd;
@@ -112,6 +126,8 @@ protected:
 	Font font;
 	boolean blinkingTick;
 	boolean hour24;
+	uint8_t actualFont; // number of font to display 0 - n
+	uint8_t requestedFont;
 };
 
 #endif /* CLOCK_H_ */

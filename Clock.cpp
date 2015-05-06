@@ -150,7 +150,7 @@ int Clock::writeDigit(int digit, int x, int y, Digit* charset, byte* buffer ) {
 	//DPRINTF("write digit: %d, pos: %d\n", digit, x);
 	int srow = 0;
 	for (int row = y; row < min(y+d.height,panel.getHeight()); row++) {
-		volatile uint8_t* src = d.data + srow++ * (d.width/8);
+		volatile uint8_t* src = d.data + srow++ * (d.sizeInBytes/d.height);
 		volatile uint8_t* pdest = (buffer==NULL ? panel.getBuffers()[2] : buffer)
 		                                             + (row*(panel.getWidth()/8)) + x/8;
 		_BS_blt( _BS_alu_copy, (volatile uint8_t* )pdest, x%8,

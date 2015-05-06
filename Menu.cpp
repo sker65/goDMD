@@ -71,6 +71,9 @@ const char* mmText[] = {
 		"Ani Reihenfolge   ",
 		"fest", "zufaellig",
 		".",
+		"Schrift",
+		"0","1","2","3","4",
+		".",
 		"." // end mark
 };
 
@@ -161,13 +164,22 @@ void Menu::update(long now) {
 #define OPTION_BUT BUT_MINUS
 #define MENU_BUT BUT_EQ
 
+#define CYCLE_FONTS BUT_0
+
 
 /**
  * IR Decoder notifies events here
  */
 void Menu::notifyEvent(unsigned long event) {
 	DPRINTF("Menu notify: 0x%06lx\n", event );
+	uint8_t newFont;
 	switch( event ) {
+		case CYCLE_FONTS:
+			newFont = clock->getActualFont()+1;
+			clock->requestFont(newFont);
+			DPRINTF("clock->requestFont(%d)\n", newFont );
+			break;
+
 		case RED_BUT:
 			panel->setAnimationColor(0);
 			DPRINTF("panel->setAnimationColor(%d)\n", 0 );

@@ -68,13 +68,14 @@ public:
 		isrCalls=0;
 	}
 
-	void setBrightness(volatile uint8_t brightness) {
-		this->brightness = brightness;
-	}
-
+	void setBrightness(volatile uint8_t brightness);
 	// used for double buffering
 	void swap( bool vsync );
 	bool bufFree( );
+
+	volatile uint8_t getBrightness() const {
+		return brightness;
+	}
 
 private:
 

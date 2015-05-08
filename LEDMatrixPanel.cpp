@@ -242,6 +242,15 @@ void LEDMatrixPanel::selectPlane(uint8_t p) {
 	LATB = (LATB & ~0x0F ) | p;
 }
 
+void LEDMatrixPanel::setBrightness(uint8_t p)
+{
+	if( p>=0 && p<= 6) {
+		this->brightness = p;
+	}
+}
+
+
+
 #define CYCLE_DURATION 1000
 
 // this method will be called via the ISR 
@@ -370,8 +379,8 @@ void LEDMatrixPanel::updateScreen() {
 	//*latport |= latpin; // Latch up data loaded
 	digitalWrite(_latch,HIGH);
 
-	duration = 100;
-    if( actBuffer==1 ) { duration += 400; }
+	duration = 100+brightness*100;
+    if( actBuffer==1 ) { duration += 400+brightness*300; }
     else if( actBuffer==2 ) { duration +=timeBright*400; }
 
 	if (++plane >= planes) {

@@ -33,6 +33,7 @@
 #define SET_DATE_MODE 9
 #define SET_COLOR_ANI 10
 #define SET_COLOR_CLOCK 11
+#define COLOR_CHANGE 3 // we use 3 normal colors 0,1,2 so 4 is change
 
 #define SET_TEMP_MODE 12
 #define SET_PIR_MODE 13

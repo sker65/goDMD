@@ -14,7 +14,7 @@
 // menu texts
 const char* mmText[] = {
 		"Helligkeit       ",
-		"dunkel","mittel","hell",
+		"0","1","2","3","4","5","6",
 		".",
 		"Zeit-Stunden     ",
 		"0","1","2","3","4","5","6","7","8","9",
@@ -165,6 +165,8 @@ void Menu::update(long now) {
 #define MENU_BUT BUT_EQ
 
 #define CYCLE_FONTS BUT_0
+#define BRIGHTNESS_UP BUT_8
+#define BRIGHTNESS_DOWN BUT_7
 
 
 /**
@@ -174,6 +176,14 @@ void Menu::notifyEvent(unsigned long event) {
 	DPRINTF("Menu notify: 0x%06lx\n", event );
 	uint8_t newFont;
 	switch( event ) {
+		case BRIGHTNESS_DOWN:
+			panel->setBrightness(panel->getBrightness()-1);
+			DPRINTF("set brightness to %d\n",panel->getBrightness());
+			break;
+		case BRIGHTNESS_UP:
+			panel->setBrightness(panel->getBrightness()+1);
+			DPRINTF("set brightness to %d\n",panel->getBrightness());
+			break;
 		case CYCLE_FONTS:
 			newFont = clock->getActualFont()+1;
 			clock->requestFont(newFont);

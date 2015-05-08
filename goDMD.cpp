@@ -290,16 +290,6 @@ void loop() {
 			irrecv.resume();
 		}
 		
-		if(now > nextColorChange ) {
-			nextColorChange = now + 60000;
-			if( menu.getOption(SET_COLOR_ANI)==COLOR_CHANGE ) {
-				panel.setAnimationColor(random(3));
-			}
-			if( menu.getOption(SET_COLOR_CLOCK)==COLOR_CHANGE ) {
-				panel.setTimeColor(random(3));
-			}
-		}
-
 		// show with blinking led ISR is running
 		if( panel.getISRCalls() > ledInterval ) {
 			panel.resetISRCalls();
@@ -383,6 +373,18 @@ void loop() {
 				if( dateMode == 1 ) {
 					switchToDate = now + clockShowTime/2; // nach der halben Zeit kommt das Datum
 				}
+
+				// check color change
+				if(now > nextColorChange ) {
+					nextColorChange = now + 60000;
+					if( menu.getOption(SET_COLOR_ANI)==COLOR_CHANGE ) {
+						panel.setAnimationColor(random(3));
+					}
+					if( menu.getOption(SET_COLOR_CLOCK)==COLOR_CHANGE ) {
+						panel.setTimeColor(random(3));
+					}
+				}
+
 			}
 			break;
 		case showMenu:

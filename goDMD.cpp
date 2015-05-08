@@ -77,13 +77,44 @@ void waitBut() {
 	while(digitalRead(PIN_BTN1)==HIGH);
 }
 
+#include "ir-codes.h"
+
 void selftest() {
 	panel.println("SELFTEST");
 	panel.println(VERSION);
 	waitBut();
 	panel.println("PANELTEST");
+	int b = 0;
+	boolean run = true;
 	int col = 0;
-	int br = 1;
+	int br = 3;
+	panel.setAnimationColor(col);
+	panel.drawRect(0,0,128,32,br++);
+	while( run) {
+		if( irrecv.decode(&results) ) {
+			if( results.value == BUT_7 && b>0 ) {
+				b--;
+			}
+			if( results.value == BUT_8 && b<10 ) {
+				b++;
+			}
+			if( results.value == BUT_9 ) run = false;
+			if( results.value == BUT_1 ) {
+				DPRINTF("draw col=%d br=%d\n",col,br);
+				panel.setAnimationColor(col);
+				panel.drawRect(0,0,128,32,br++);
+				if( br >= 4) { //  4
+					br = 1;
+					col++;
+					if( col == 3) col = 0;
+				}
+			}
+			panel.setBrightness(b);
+			DPRINTF("set Brightness to %d\n",b);
+			irrecv.resume();
+		}
+	}
+	panel.println("press but to cont");
 	while( true ){
 		panel.setAnimationColor(col);
 		panel.drawRect(0,0,128,32,br++);
@@ -198,9 +229,10 @@ int tempMode = 0;
 
 // TODO no global function this way
 void reloadConfig() {
-	panel.setAnimationColor(menu.getOption(SET_COLOR_ANI)+1);
+	panel.setAnimationColor(menu.getOption(SET_COLOR_ANI));
 	panel.setTimeColor(menu.getOption(SET_COLOR_CLOCK));
 	panel.setBrightness(menu.getOption(SET_BRIGHTNESS));
+	DPRINTF("panel.setBrightness: %d\n", menu.getOption(SET_BRIGHTNESS));
 
 	clock.setMode(menu.getOption(SET_TIME_MODE)==1?Clock::TIMESEC:Clock::TIME);
 	DPRINTF("set time mode: %d\n", menu.getOption(SET_TIME_MODE));
@@ -248,6 +280,8 @@ void loop() {
 
 	uint32_t ledInterval = 3000;
 
+	long nextColorChange = 0;
+
 	while(true) {
 		long now = millis();
 
@@ -256,6 +290,16 @@ void loop() {
 			irrecv.resume();
 		}
 		
+		if(now > nextColorChange ) {
+			nextColorChange = now + 60000;
+			if( menu.getOption(SET_COLOR_ANI)==COLOR_CHANGE ) {
+				panel.setAnimationColor(random(3));
+			}
+			if( menu.getOption(SET_COLOR_CLOCK)==COLOR_CHANGE ) {
+				panel.setTimeColor(random(3));
+			}
+		}
+
 		// show with blinking led ISR is running
 		if( panel.getISRCalls() > ledInterval ) {
 			panel.resetISRCalls();

@@ -18,6 +18,7 @@
 #include "Menu.h"
 #include "PirHandler.h"
 #include "debug.h"
+#include "version.h"
 
 #define DS18B20_PIN CON2_1
 
@@ -60,8 +61,6 @@ long nextPixel = 0;
 int x = 0;
 int y = 0;
 bool on=false;
-
-#define VERSION "goDmd v1.01-rc1"
 
 // define a char out hook for printf
 extern "C"

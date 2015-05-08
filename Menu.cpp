@@ -227,7 +227,7 @@ void Menu::saveOption() {
 	option[actMenu] = actOption;
 }
 
-#define OPTION_DAT "OPTION.DAT"
+#define OPTION_DAT "option.dat"
 
 /**
  * load menu options from sd card

@@ -12,6 +12,8 @@
 #define bitsPerPixel 2
 #define clockPlane 2
 
+#define LEDS_ACTIVE_HIGH
+
 #if defined(__PIC32MX__) 
 
 #include <p32xxxx.h>    /* this gives all the CPU/hardware definitions */
@@ -291,8 +293,13 @@ void LEDMatrixPanel::updateScreen() {
 	}
 
 	for (uint8_t xb = 0; xb < width / 8; xb++) { // weil 2 bits geshifted wird
+#ifdef LEDS_ACTIVE_HIGH
+		uint8_t b1 = *ptr++;
+		uint8_t b2 = *ptr1++;
+#else
 		uint8_t b1 = ~ *ptr++;
 		uint8_t b2 = ~ *ptr1++;
+#endif
 		for (int j = 0; j < 8; j++) {
 
 // eigentlich nicht platform abhängig sondern nur hinsichtlich der Lage der Bits auf den Ports
@@ -311,6 +318,23 @@ void LEDMatrixPanel::updateScreen() {
 #endif
 // beim pic32 sind es die unteren 4 bit 0/1 für rot und 2/3 für grün
 #ifdef __PIC32MX__
+
+	#ifdef LEDS_ACTIVE_HIGH
+			uint16_t out = 0x0000;
+			if( col == 1) {
+				// green
+				out = (((b1 & 0b10000000)>>4) | ((b2 & 0b10000000)>>5)) & 0b00001100;
+			} else if( col == 0) {
+				// red
+				//DATAPORT = (DATAPORT & ~0b00000011 ) | (b1 & 0b11000000)>>6 ;
+				out = (((b1 & 0b10000000)>>6) | ((b2 & 0b10000000)>>7)) & 0b00000011;
+			} else {
+				// amber
+				//DATAPORT = (DATAPORT & ~0b00001111 ) | ((b1 & 0b11000000)>>6) | ((b1 & 0b11000000)>>4);
+				out = ((b1 & 0b10000000)>>6) | ((b2 & 0b10000000)>>7) | ((b1 & 0b10000000)>>4) | ((b2 & 0b10000000)>>5);
+			}
+			DATAPORT = out; //(DATAPORT & ~0b00001111 ) | out;
+	#else
 			uint16_t out = 0xFFFF;
 			if( col == 1) {
 				// green
@@ -325,6 +349,8 @@ void LEDMatrixPanel::updateScreen() {
 				out = ((b1 & 0b10000000)>>6) | ((b2 & 0b10000000)>>7) | ((b1 & 0b10000000)>>4) | ((b2 & 0b10000000)>>5);
 			}
 			DATAPORT = out; //(DATAPORT & ~0b00001111 ) | out;
+
+	#endif
 #endif
 
 			// shift out

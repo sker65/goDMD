@@ -71,7 +71,7 @@ const char* mmText[] = {
 		"Ani Reihenfolge   ",
 		"fest", "zufaellig",
 		".",
-		"Schrift",
+		"Schrift           ",
 		"0","1","2","3","4",
 		".",
 		"." // end mark
@@ -174,6 +174,7 @@ void Menu::update(long now) {
  */
 void Menu::notifyEvent(unsigned long event) {
 	DPRINTF("Menu notify: 0x%06lx\n", event );
+	panel->setPixel(0,0,2); // light pixel
 	uint8_t newFont;
 	switch( event ) {
 		case BRIGHTNESS_DOWN:
@@ -230,8 +231,10 @@ void Menu::notifyEvent(unsigned long event) {
 void Menu::saveOption() {
 	if( actOption != option[actMenu] ) {
 		dirty = true;
+		DPRINTF("Setting option[%d]=%d\n",actMenu,actOption);
 		if( actMenu >= SET_TIME_HOURS && actMenu <= SET_DATE_DAY) {
 			clockDirty = true; // force rtc adjust
+			DPRINTF("and force RTC sync\n");
 		}
 	}
 	option[actMenu] = actOption;
@@ -265,6 +268,9 @@ void Menu::loadOptions() {
 	option[SET_DATE_MON] = n.month()-1;
 	option[SET_DATE_YEAR] = n.year()-2015;
 
+	for(int i = 0; i<NMENU;i++) {
+		DPRINTF("Menu::loadOptions option[%d]=%d\n",i,option[i]);
+	}
 }
 
 /**
@@ -319,6 +325,8 @@ void Menu::enterMenu() {
 	panel->clear();
 	redrawNeeded=true;
 	active=true;
+	// load active option from next menu
+	actOption = option[actMenu];
 }
 
 /**
@@ -366,6 +374,9 @@ void Menu::leaveMenu() {
 		clockDirty = false;
 	}
 
+	for(int i = 0; i<NMENU;i++) {
+		DPRINTF("Menu::leaveMenu option[%d]=%d\n",i,option[i]);
+	}
 	SdFile f;
 	if( f.open(SD.root, OPTION_DAT, O_CREAT|O_WRITE) ) {
 		int r = f.write((void*)option, NMENU);
@@ -374,7 +385,6 @@ void Menu::leaveMenu() {
 	} else {
 		DPRINTF("Menu::leaveMenu: open for write %s failed.", OPTION_DAT);
 	}
-
 	active = false;
 }
 

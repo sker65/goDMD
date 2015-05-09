@@ -16,6 +16,10 @@ PirHandler::PirHandler(uint8_t pin) : pin(pin)
 	delay = 45000;
 }
 
+bool PirHandler::actual() {
+	return digitalRead(pin)==HIGH;
+}
+
 void PirHandler::update(long now) {
 	lastResult = digitalRead(pin);  // true / high means active -> somebody is here
 	lastProbe = now;

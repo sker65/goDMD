@@ -17,6 +17,7 @@ public:
 
 	void update(long now);
 	bool somebodyHere();
+	bool actual();
 
 	long getDelay() const {
 		return delay;

@@ -10,7 +10,7 @@
 
 PirHandler::PirHandler(uint8_t pin) : pin(pin)
 {
-	pinMode(pin, OUTPUT);
+	pinMode(pin, INPUT);
 	lastProbe = lastTimeSomebodyWasThere=0;
 	lastResult = false;
 	delay = 45000;

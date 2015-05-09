@@ -323,6 +323,30 @@ void loop() {
 	while(true) {
 		long now = millis();
 
+		if( Serial.available() ) {
+			String ps = Serial.readStringUntil('\n');
+			const char* p = ps.c_str();
+			DPRINTF("received string: '%s'\n",p);
+			// 2015-05-09T11:55:13+0200
+			//SETTIME<seconds since 1970>
+			if( strncmp(p,"SETTIME",7)==0) {
+				p += 7;
+				long unixtime = 0;
+				while( *p != 0) {
+					unixtime *= 10;
+					if( *p >= '0' && *p <= '9') {
+						unixtime += *p -'0';
+					}
+					p++;
+				}
+				// simple hack to adjust tz CEST +2 hours
+				unixtime += 60*60*2;
+				DateTime dt(unixtime);
+				DPRINTF("setting rtc clock to: %d \n", unixtime);
+				clock.adjust(&dt);
+			}
+		}
+
 		if( irrecv.decode(&results) ) {
 			menu.notifyEvent(results.value);
 			irrecv.resume();

@@ -86,6 +86,7 @@ void selftest() {
 	panel.println("PANELTEST");
 	int b = 0;
 	boolean run = true;
+	boolean seenHigh = false;
 	int col = 0;
 	int br = 3;
 	panel.setAnimationColor(col);
@@ -113,7 +114,44 @@ void selftest() {
 			DPRINTF("set Brightness to %d\n",b);
 			irrecv.resume();
 		}
+		if( digitalRead(PIN_BTN1)==HIGH ) seenHigh = true;
+		if( seenHigh && digitalRead(PIN_BTN1)==LOW ) run=false;
 	}
+
+	// one pager
+	run = true;
+	seenHigh = false;
+	long update = 0;
+	uint32_t lastIr = 0;
+	while(run) {
+		long now = millis();
+		if( update < now ) {
+			update = now+1000;
+			panel.clear();
+			if( pir.actual() ) panel.writeText("PIR: true",0,0,9);
+			else panel.writeText("PIR: false",0,0,10);
+			char buf[16];
+			sprintf(buf,"0x%08x",lastIr);
+			panel.writeText(buf,0,8,10);
+			sensor.requestTemperatures();
+			float actTemp = sensor.getTempCByIndex(0);
+			sprintf(buf, "%03.1f *C",actTemp);
+			panel.writeText(buf,0,16,7);
+			DateTime n = rtc.now();
+			sprintf(buf,"%02d:%02d:%02d %02d%02d%02d",
+					n.hour(),n.minute(),n.second(),
+					n.day(),n.month(),n.year()%1000);
+			panel.writeText(buf,0,24,15);
+		}
+		if( irrecv.decode(&results) ) {
+			lastIr = results.value;
+			irrecv.resume();
+			if( results.value == BUT_9 ) run = false;
+		}
+		if( digitalRead(PIN_BTN1)==HIGH ) seenHigh = true;
+		if( seenHigh && digitalRead(PIN_BTN1)==LOW ) run=false;
+	}
+
 	panel.println("press but to cont");
 	while( true ){
 		panel.setAnimationColor(col);
@@ -295,6 +333,7 @@ void loop() {
 			panel.resetISRCalls();
 			on = !on;
 			//digitalWrite(PIN_LED2,on);
+			ledInterval = on ? 100:3000;
 		}
 
 		pir.update(now);

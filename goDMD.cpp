@@ -123,13 +123,13 @@ void selftest() {
 	seenHigh = false;
 	long update = 0;
 	uint32_t lastIr = 0;
+	panel.clear();
 	while(run) {
 		long now = millis();
 		if( update < now ) {
 			update = now+1000;
-			panel.clear();
-			if( pir.actual() ) panel.writeText("PIR: true",0,0,9);
-			else panel.writeText("PIR: false",0,0,10);
+			if( pir.actual() ) panel.writeText("PIR: true   ",0,0,12);
+			else panel.writeText("PIR: false  ",0,0,12);
 			char buf[16];
 			sprintf(buf,"0x%08x",lastIr);
 			panel.writeText(buf,0,8,10);

@@ -59,6 +59,7 @@ protected:
 	boolean randomOrder;
 	boolean seenAllAnimations; // switches to true, when all animations scanned in the first run
 	uint16_t version;
+	boolean seenMaskFrame;
 };
 
 #endif /* ANIMATION_H_ */

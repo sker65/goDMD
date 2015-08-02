@@ -52,6 +52,7 @@ void readString(File& f) {
 
 void Animation::readNextAnimation() {
 	int c = 0;
+	seenMaskFrame = false;
 	if( randomOrder && seenAllAnimations ) {
 		actAnimation = random(numberOfAnimations);
 		ani.seek(aniIndex[actAnimation]);
@@ -150,6 +151,7 @@ uint16_t Animation::readNextFrame(long now, bool maskClock) {
 			if( planeType == 0x6D ) { // 'm' for masking plane for time
 				ani.readBytes(mask, buflen);
 				useMask = true;
+				seenMaskFrame = true;
 			} else {
 				ani.readBytes(buf, buflen);
 				if( useMask ) {
@@ -239,6 +241,10 @@ boolean Animation::update(long now) {
 				nextAnimationUpdate = now + 200*holdCycles; // hold
 				hold = true;
 			}
+		}
+		if( seenMaskFrame && holdCycles > 0 ) {
+			nextAnimationUpdate += 200*holdCycles;
+			holdCycles = 0;
 		}
 	}
 	return false;

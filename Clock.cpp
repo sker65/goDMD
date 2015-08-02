@@ -178,21 +178,24 @@ void dumpDigit(Digit* d) {
 	}
 }
 
-int Clock::writeDigit(int digit, int x, int y, Digit* charset, byte* buffer ) {
+// default mode _BS_alu_copy
+// mask mode is _BS_alu_andReverse
+int Clock::writeDigit(int digit, int x, int y, Digit* charset, byte* buffer, _BS_alu mode, boolean useMask ) {
 	Digit d = charset[digit];
 	//DPRINTF("write digit: %d, pos: %d\n", digit, x);
 	int srow = 0;
 	for (int row = y; row < min(y+d.height,panel.getHeight()); row++) {
-		volatile uint8_t* src = d.data + srow++ * (d.sizeInBytes/d.height);
+		volatile uint8_t* src = (useMask ? d.mask : d.data) + srow++ * (d.sizeInBytes/d.height);
 		volatile uint8_t* pdest = (buffer==NULL ? panel.getBuffers()[2] : buffer)
 		                                             + (row*(panel.getWidth()/8)) + x/8;
-		_BS_blt( _BS_alu_copy, (volatile uint8_t* )pdest, x%8,
+		_BS_blt( mode, (volatile uint8_t* )pdest, x%8,
 				(volatile uint8_t* )src, 0, d.width);
 	}
 	return x+d.width;
 }
 
-void Clock::writeText(const char* text, int x, int y, Digit* charset, byte* buffer) {
+void Clock::writeText(const char* text, int x, int y, Digit* charset,
+		byte* buffer, _BS_alu alumode, boolean useMask ) {
 	const char* p = text;
 	const char* b = DIGITS;
 	int xo = x;
@@ -201,7 +204,7 @@ void Clock::writeText(const char* text, int x, int y, Digit* charset, byte* buff
 		if( q ) {
 			//DPRINTF("char: %ld\n", q-b );
 			// breite in bytes = digits[q-p].width / 4;
-			xo = writeDigit(q-b,xo,y,charset, buffer);
+			xo = writeDigit(q-b,xo,y,charset, buffer, alumode, useMask);
 		}
 		p++;
 	}
@@ -242,15 +245,15 @@ void Clock::formatTime(char* time, long now) {
 	}
 }
 
-void Clock::writeTimeIntern(long now, byte* buffer) {
+void Clock::writeTimeIntern(long now, byte* buffer, _BS_alu alumode, boolean useMask) {
 	char time[10];
 	formatTime(time,now);
 	switch(font) {
 	case Big:
-		writeText(time,(mode==TIMESEC) ? 10 : 28,0,digits,buffer);
+		writeText(time,(mode==TIMESEC) ? 10 : 28,0,digits, buffer, alumode, useMask);
 		break;
 	case Small:
-		writeText(time,xoffset,yoffset,smallDigits,buffer);
+		writeText(time,xoffset,yoffset,smallDigits, buffer, alumode, useMask);
 		break;
 	}
 }

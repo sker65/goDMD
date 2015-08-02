@@ -11,6 +11,7 @@
 #include <WProgram.h>
 #include <Wire.h>
 #include "RTClib.h"
+#include "utility/bitprims.h"
 
 class LEDMatrixPanel;
 class SDClass;
@@ -36,13 +37,15 @@ public:
 	void on();
 	// writes actual time (optinally with seconds)
 	void writeTime(long now, byte* buffer = NULL);
-	void writeTimeIntern(long now, byte* buffer=NULL);
+	void writeTimeIntern(long now, byte* buffer=NULL,
+			_BS_alu mode = _BS_alu_copy, boolean useMask = false );
 	// writes date
 	void writeDate(long now, byte* buffer = NULL);
 	// writes temperature
 	void writeTemp(float actTemp, byte* buffer = NULL);
 	// switch clock off
-	void writeText(const char* text, int x, int y, Digit* charset, byte* buffer = NULL);
+	void writeText(const char* text, int x, int y, Digit* charset, byte* buffer = NULL,
+			_BS_alu mode = _BS_alu_copy, boolean useMask=false);
 
 	void formatTime(char* buffer, long now);
 
@@ -58,7 +61,8 @@ public:
 	void setMode( Mode newMode);
 	Mode getMode() const { return mode; }
 	//void writeDigit(int digit, int xoffset, uint8_t nBytes, byte* buffer = NULL);
-	int writeDigit(int digit, int x, int y, Digit* charset, byte* buffer );
+	int writeDigit(int digit, int x, int y, Digit* charset,
+			byte* buffer=NULL, _BS_alu mode = _BS_alu_copy, boolean useMask=false);
 	//int writeDoubleDigit(int digit, int x, byte* buffer);
 
 

@@ -153,31 +153,45 @@ uint16_t Animation::readNextFrame(long now, bool maskClock) {
 				useMask = true;
 				seenMaskFrame = true;
 			} else {
+
 				ani.readBytes(buf, buflen);
+
+				// there was a masking plane -> use it
 				if( useMask ) {
 					clearAfterAni = false;
+					// allocate buffer for time to mask
 					byte timebuf[buflen];
 					memset(timebuf,0,buflen);
 					clock.writeTimeIntern(now,timebuf); // render time
 					byte* pDst = timebuf;
 					byte* pMask = mask;
+					// mask time
 					for(int j = 0; j< buflen; j++) {
 						*pDst &= ~( *pMask++ ); // mask in
 						pDst++;
 					}
+					// copy masked time to time plane
 					memcpy((void*)panel.getBuffers()[2],timebuf,buflen);
 					pDst = buf;
 					pMask = mask;
+					// now mask animation
 					for(int j = 0; j< buflen; j++) {
 						*pDst++ &= *pMask++; // mask out
 					}
 				}
-				if( maskClock ) clock.writeTime(now,buf);
+
+				//  do not used normal digits, but mask digits
+				if( maskClock ) clock.writeTimeIntern(now,buf,_BS_alu_andInverted, true);
+
+				// TODO to put clock in background this should be or
+				// but until now its a different plane
+
+				// copy planes 0,1 into panel buffer
 				if( planeType < panel.getNumberOfBuffers()) {
 					memcpy((void*)panel.getBuffers()[planeType],buf,buflen);
 				}
-			}
-		}
+			} // not a mask plane
+		} // for planes
 	}
 	panel.swap(true);
 	actFrame++;
@@ -209,7 +223,7 @@ boolean Animation::update(long now) {
 			readNextAnimation();
 		}
 
-		uint16_t delay = readNextFrame(now, clockInFront);
+		uint16_t delay = readNextFrame(now, clockInFront & (actFrame >= clockFrom));
 		nextAnimationUpdate = now + (delay>0?delay:refreshDelay);
 
 		if( actFrame >= clockFrom ) {

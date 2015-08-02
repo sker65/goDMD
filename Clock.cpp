@@ -116,8 +116,10 @@ boolean Clock::begin() {
 }
 
 void Clock::setMode( Mode newMode ) {
-	if( this->mode != newMode ) panel.clearTime();
-	this->mode = newMode;
+	if( this->mode != newMode ) {
+		panel.clearTime();
+		this->mode = newMode;
+	}
 }
 
 void Clock::adjust(DateTime* dt) {

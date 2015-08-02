@@ -1,0 +1,11 @@
+gcc misc options:
+-Wno-unused-function -c -mprocessor=32MX440F256H -g -O2 -ffunction-sections -fdata-sections -mno-smart-io -mdebugger -Wcast-align -fno-short-double -DF_CPU=60000000L -DARDUINO=0023 -D_BOARD_OLIMEX_PIC32_PINGUINO_ -DMPIDEVER=29 -DMPIDE=0023 -D_USE_USB_FOR_SERIAL_
+
+-c -Wall -Wno-unused-function  -mprocessor=32MX440F256H  -ffunction-sections -fdata-sections -mno-smart-io -mdebugger -Wcast-align -fno-short-double -DF_CPU=60000000L -DARDUINO=0023 -D_BOARD_OLIMEX_PIC32_PINGUINO_ -DMPIDEVER=29 -DMPIDE=0023 -D_USE_USB_FOR_SERIAL_ -D__32MX460F256L__
+
+g++ misc options:
+-Wno-unused-function -c -mprocessor=32MX440F256H -g -O2 -fno-exceptions -ffunction-sections -fdata-sections -mno-smart-io -mdebugger -Wcast-align -fno-short-double -DF_CPU=60000000L -DARDUINO=0023 -D_BOARD_OLIMEX_PIC32_PINGUINO_ -DMPIDEVER=29 -DMPIDE=0023 -D_USE_USB_FOR_SERIAL_
+
+-c -fmessage-length=0 -Wall -Wno-unused-function  -mprocessor=32MX440F256H -fno-exceptions -ffunction-sections -fdata-sections -mno-smart-io -mdebugger -Wcast-align -fno-short-double -DF_CPU=60000000L -DARDUINO=0023 -D_BOARD_OLIMEX_PIC32_PINGUINO_ -DMPIDEVER=29 -DMPIDE=0023 -D_USE_USB_FOR_SERIAL_ -D__32MX460F256L__
+
+

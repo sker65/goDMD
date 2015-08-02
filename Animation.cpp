@@ -28,7 +28,7 @@ boolean Animation::begin() {
 	// read 4 header ANIM
 	ani.seekCur(4);
 	// read 2 byte version (1)
-	uint16_t version = ani.read()*256+ani.read();
+	version = ani.read()*256+ani.read();
 	DPRINTF("version: %d\n",version);
 	// read number of anis
 	numberOfAnimations  = ani.read()*256+ani.read();
@@ -47,7 +47,7 @@ void readString(File& f) {
 		name[i] = f.read();
 	}
 	name[len] = '\0';
-	DPRINTF("name: %s\n",name);
+	DPRINTF("%s\n",name);
 }
 
 void Animation::readNextAnimation() {
@@ -59,7 +59,12 @@ void Animation::readNextAnimation() {
 	while(true) {
 		actFilePos = ani.position();
 		aniIndex[actAnimation] = actFilePos;
-		readString(ani);
+		DPRINTF("name: ");
+		readString(ani); // read name
+		if( version > 1 ) {
+			DPRINTF("transition: ");
+			readString(ani); // read name
+		}
 		// cycles 2
 		int cyc = ani.read()*256+ani.read();
 		if( cycles == 0 ) { // beim loop mit mehreren cycles, soll nur

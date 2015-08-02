@@ -446,6 +446,7 @@ void loop() {
 
 		case showTemp:
 			clock.setMode(Clock::TEMP);
+			clock.on();
 			if( now > switchToAni ) {
 				state = showAni;
 				clock.off();
@@ -455,6 +456,7 @@ void loop() {
 
 		case showDate:
 			clock.setMode(Clock::DATE);
+			clock.on();
 			if( now > switchToAni ) {
 				state = showAni;
 				clock.off();

@@ -30,7 +30,7 @@
 								<option id="gnu.c.compiler.option.debugging.level.2077431554" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.dialect.std.798653394" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.preprocessor.nostdinc.1564367695" name="Do not search system directories (-nostdinc)" superClass="gnu.c.compiler.option.preprocessor.nostdinc" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="gnu.c.compiler.option.misc.other.1893037306" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-Wno-unused-function -c -mprocessor=32MX440F256H -g -O2 -ffunction-sections -fdata-sections -mno-smart-io -mdebugger -Wcast-align -fno-short-double -DF_CPU=80000000L -DARDUINO=0023 -D_BOARD_OLIMEX_PIC32_PINGUINO_ -DMPIDEVER=29 -DMPIDE=0023 -D_USE_USB_FOR_SERIAL_" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.1893037306" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-Wno-unused-function -c -mprocessor=32MX440F256H -g -O2 -ffunction-sections -fdata-sections -mno-smart-io -mdebugger -Wcast-align -fno-short-double -DF_CPU=60000000L -DARDUINO=0023 -D_BOARD_OLIMEX_PIC32_PINGUINO_ -DMPIDEVER=29 -DMPIDE=0023 -D_USE_USB_FOR_SERIAL_&#10;" valueType="string"/>
 								<option id="gnu.c.compiler.option.include.paths.1405202536" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/chipKit-Core}&quot;"/>
 									<listOptionValue builtIn="false" value="${pic32tools}/pic32mx/include"/>
@@ -39,6 +39,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.243646329" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__32MX460F256L__"/>
+									<listOptionValue builtIn="false" value="_DEBUG"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1768717844" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -47,7 +48,7 @@
 								<option id="gnu.cpp.compiler.option.debugging.level.1897463888" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.dialect.std.38293946" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.nostdinc.347027450" name="Do not search system directories (-nostdinc)" superClass="gnu.cpp.compiler.option.preprocessor.nostdinc" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="gnu.cpp.compiler.option.other.other.19813889" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-Wno-unused-function -c -mprocessor=32MX440F256H -g -O2 -fno-exceptions -ffunction-sections -fdata-sections -mno-smart-io -mdebugger -Wcast-align -fno-short-double -DF_CPU=80000000L -DARDUINO=0023 -D_BOARD_OLIMEX_PIC32_PINGUINO_ -DMPIDEVER=29 -DMPIDE=0023 -D_USE_USB_FOR_SERIAL_" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.19813889" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-Wno-unused-function -c -mprocessor=32MX440F256H -g -O2 -fno-exceptions -ffunction-sections -fdata-sections -mno-smart-io -mdebugger -Wcast-align -fno-short-double -DF_CPU=60000000L -DARDUINO=0023 -D_BOARD_OLIMEX_PIC32_PINGUINO_ -DMPIDEVER=29 -DMPIDE=0023 -D_USE_USB_FOR_SERIAL_" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.967567646" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/chipKit-Core}&quot;"/>
 									<listOptionValue builtIn="false" value="${pic32tools}/pic32mx/include"/>

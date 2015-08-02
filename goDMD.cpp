@@ -194,6 +194,40 @@ void selftest() {
 	}
 }*/
 
+/*void xsetup() {
+
+	Serial.begin(115200);
+
+	for( int i =0; i<5;i++) {
+		DPRINTF("wait %lu \n", millis());
+		delay(1000);
+	}
+
+	  Serial1.begin(9600);
+
+	  delay(5000);
+
+	  Serial1.print("AT+RST\r");
+	  //Serial1.setTimeout(8000);
+	  delay(1000);
+	  while( true ) {
+		  String c = Serial1.readString();
+		  Serial.print(c.c_str());
+	  }
+
+	  if (Serial1.find("ready")) {
+		  Serial.println("Module is ready");
+	  } else {
+	    Serial.println("ESP8266 Module did not respond.");
+	    Serial.println("Enter Commands Manually.");
+	  }
+}
+
+void xloop() {
+	delay(1999);
+}*/
+
+
 void setup() {
 	Serial.begin(9600);
 #ifdef _DxEBUG
@@ -248,6 +282,8 @@ void setup() {
 	sensor.begin();
 	DPRINTF("sensors found: %d\n",sensor.getDeviceCount());
 
+//	DPRINTF("Running at: %d\n", System.get());
+
 	if(digitalRead(PIN_BTN1)==FALSE) {
 		selftest();
 	}
@@ -296,7 +332,7 @@ void testScreen() {
 
 // states
 enum State { showTime, showDate, showAni, showMenu, freeze,
-	pirNobodyThere,
+	pirNobodyThere, showTemp
 };
 
 
@@ -319,6 +355,9 @@ void loop() {
 	uint32_t ledInterval = 3000;
 
 	long nextColorChange = 0;
+
+	int stateCycle = 0;
+	int dateTemp = 0;
 
 	while(true) {
 		long now = millis();
@@ -369,6 +408,9 @@ void loop() {
 			state = showMenu;
 		}
 
+		// ani -> time -> ani
+		// or ani -> date -> ( ani -> time -> ) 5x
+
 		switch( state ) {
 		case showTime:
 			clock.on();
@@ -399,42 +441,47 @@ void loop() {
 					}
 				}
 			}
-			if( dateMode==0 && now > switchToDate ) {
-				state = showDate;
-				if( tempMode == 0 && dateShowCount > 2) {
-					dateShowCount=0;
-					clock.setMode(Clock::TEMP);
-				} else {
-					clock.setMode(Clock::DATE);
-				}
-				switchToTime = now + 2000; // viewing duration date
-				dateShowCount++;
-			}
-			else if( tempMode == 0 && now > switchToDate ) {
-				state = showDate;
-				clock.setMode(Clock::TEMP);
-				switchToTime = now + 2000;
-			}
 			clock.update(now);
 			break;
-		case showDate:
+
+		case showTemp:
+			clock.setMode(Clock::TEMP);
 			if( now > switchToAni ) {
 				state = showAni;
 				clock.off();
 			}
-			if( now > switchToTime ) {
-				switchToDate = switchToAni + 50000; // weit weg
-				clock.setMode(menu.getOption(SET_TIME_MODE)==1?Clock::TIMESEC:Clock::TIME);
-				state = showTime;
+			clock.update(now);
+			break;
+
+		case showDate:
+			clock.setMode(Clock::DATE);
+			if( now > switchToAni ) {
+				state = showAni;
+				clock.off();
 			}
 			clock.update(now);
 			break;
+
 		case showAni:
 			if( animation.update(now) ) { // true means ani finished
-				switchToAni = now + clockShowTime; // millis to show clock
-				state = showTime;
-				if( dateMode == 1 ) {
-					switchToDate = now + clockShowTime/2; // nach der halben Zeit kommt das Datum
+
+				if( stateCycle++ > 5 ) { // every five times
+					stateCycle = 0;
+					dateTemp++;
+					// check want to show next temp ot date or simply time
+					if( tempMode>0 && dateTemp % 3 == 0 ) {
+						state=showTemp;
+						switchToAni = now + 3000 + tempMode * 1500;
+					} else {
+						if( dateMode > 0 ) {
+							state = showDate;
+							switchToAni = now + 3000 + dateMode * 1500;
+						}
+					}
+				} else {
+					switchToAni = now + clockShowTime; // millis to show clock
+					state = showTime;
+					clock.setMode(menu.getOption(SET_TIME_MODE)==1?Clock::TIMESEC:Clock::TIME);
 				}
 
 				// check color change
@@ -450,6 +497,7 @@ void loop() {
 
 			}
 			break;
+
 		case showMenu:
 			if( !menu.isActive()) {
 				// menu is finish / clock is set, but reconfige ani / panel
@@ -457,6 +505,7 @@ void loop() {
 				state = showTime;
 			}
 			break;
+
 		case pirNobodyThere:
 			ledInterval = 6000;
 			if( pir.somebodyHere()) {

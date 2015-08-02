@@ -42,6 +42,7 @@
 #define H2412_MODE 16
 #define ANIORDER_MODE 17
 #define CURRENT_FONT 18
+#define LED_INDICATOR 19
 
 #define BLINK_ON 0
 #define BLINK_OFF 1
@@ -49,7 +50,7 @@
 #define MODE_24H 0
 #define MODE_12H 1
 
-#define NMENU 19
+#define NMENU 20
 
 #define PIR_INACTIVE 0
 #define PIR_DIM 1

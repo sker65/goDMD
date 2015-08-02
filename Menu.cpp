@@ -75,6 +75,9 @@ const char* mmText[] = {
 		"Schrift         ",
 		"0","1","2","3","4",
 		".",
+		"LED Indicator   ",
+		"an","aus",
+		".",
 		"." // end mark
 };
 
@@ -175,7 +178,9 @@ void Menu::update(long now) {
  */
 void Menu::notifyEvent(unsigned long event) {
 	DPRINTF("Menu notify: 0x%06lx\n", event );
-	panel->setPixel(0,0,2); // light pixel
+	if( option[LED_INDICATOR] == 0) {
+		panel->setPixel(0,0,2); // light pixel
+	}
 	uint8_t newFont;
 	switch( event ) {
 		case BRIGHTNESS_DOWN:

@@ -319,6 +319,7 @@ void reloadConfig() {
 	clock.setHour24(menu.getOption(H2412_MODE)==MODE_24H);
 	clock.setBlinkingTick(menu.getOption(BLINK_MODE)==BLINK_ON);
 	clock.requestFont(menu.getOption(CURRENT_FONT));
+	pir.setDelay((30+15*menu.getOption(PIR_HOLDTIME))*1000);
 }
 
 void testScreen() {
@@ -349,8 +350,6 @@ void loop() {
 	switchToAni = now + clockShowTime;
 
 	long switchToDate = 0;
-	long switchToTime = 0;
-	int dateShowCount = 0;
 
 	uint32_t ledInterval = 3000;
 

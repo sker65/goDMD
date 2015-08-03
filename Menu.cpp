@@ -78,6 +78,9 @@ const char* mmText[] = {
 		"LED Indicator   ",
 		"an","aus",
 		".",
+		"PIR Hold Time   ",
+		"1","2","3","4",
+		".",
 		"." // end mark
 };
 

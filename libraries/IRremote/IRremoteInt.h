@@ -82,7 +82,7 @@
 #endif
 
 #if defined(__PIC32MX__)
-#define SYSCLOCK 80000000  // for most pic32 devices
+#define SYSCLOCK 60000000  // for most pic32 devices
 #endif
 
 #define ERR 0
@@ -508,7 +508,7 @@ extern volatile irparams_t irparams;
 #include <p32xxxx.h>    /* this gives all the CPU/hardware definitions */
 #include <plib.h>       /* this gives the i/o definitions */
 
-#define SYSCLK 80000000L
+#define SYSCLK 60000000L
 
 #define TIMER_ENABLE_PWM
 #define TIMER_DISABLE_PWM
@@ -537,7 +537,7 @@ extern volatile irparams_t irparams;
 // depending on the reset value (255 to 0)
 #define TIMER_CONFIG_NORMAL() ({ \
 	SYSTEMConfigPerformance(SYSCLK); \
-	OpenTimer2( T2_ON | T2_SOURCE_INT | T2_PS_1_8, 500); \
+	OpenTimer2( T2_ON | T2_SOURCE_INT | T2_PS_1_8, 375); \
 }) 
 
 // reset timer count to get the fitting recording interval

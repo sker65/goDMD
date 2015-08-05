@@ -15,7 +15,7 @@ class Animation {
 public:
 	Animation(SDClass& sd, LEDMatrixPanel& panel, Clock& clock);
 	virtual ~Animation();
-	void readNextAnimation();
+	boolean readNextAnimation();
 	uint16_t readNextFrame(long now, bool mask);
 	boolean update(long now);
 	boolean begin();

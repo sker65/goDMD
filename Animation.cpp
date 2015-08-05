@@ -50,7 +50,7 @@ void readString(File& f) {
 	DPRINTF("%s\n",name);
 }
 
-void Animation::readNextAnimation() {
+boolean Animation::readNextAnimation() {
 	int c = 0;
 	seenMaskFrame = false;
 	if( randomOrder && seenAllAnimations ) {
@@ -112,19 +112,26 @@ void Animation::readNextAnimation() {
 			actAnimation = 0;
 			seenAllAnimations = true;
 		}
-		if( c++ >= numberOfAnimations) break;;
-	}; // at least one must remain
+		if( c++ >= numberOfAnimations){
+			DPRINTF("skipping loop exceeded number of animations: %d\n",numberOfAnimations);
+			panel.println("no ani left");
+			panel.println("check fsk set.");
+			DPRINTF("actual filepos: %d\n", ani.position() );
+			return false;
+		}
+	} // at least one must remain
+	return true;
 }
 
 void Animation::skipAllFrames(File& f) {
 	for( int i = 0; i < numberOfFrames; i++) {
 		DPRINTF("skipping frame: %d\n", i);
 		uint16_t len = f.read()*256+f.read();
-		uint16_t delay = f.read()*256+f.read(); // new in version 1.02
+		f.read();f.read(); // 2 bytes delay new in version 1.02
 		byte numberOfPlanes = ani.read();
 		byte buf[len];
-		for( int i = 0; i < numberOfPlanes; i++) {
-			byte planeType = ani.read();
+		for( int j = 0; j < numberOfPlanes; j++) {
+			ani.read(); // type
 			f.readBytes(buf, len);
 		}
 	}
@@ -220,7 +227,12 @@ boolean Animation::update(long now) {
 				ani.seek(8); // reset
 				actAnimation = 0;
 			}
-			readNextAnimation();
+			if( !readNextAnimation() ) {
+				// there was an error
+				nextAnimationUpdate = now+15000;
+				hold = true;
+				return false;
+			}
 		}
 
 		uint16_t delay = readNextFrame(now, clockInFront & (actFrame >= clockFrom));

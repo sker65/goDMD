@@ -101,6 +101,10 @@ public:
 		return actualFont;
 	}
 
+	void setTempOffset(int8_t tempOffset) {
+		this->tempOffset = tempOffset;
+	}
+
 protected:
 	void readFont(File* f, Digit* d, int size);
 	boolean loadFont(uint8_t);
@@ -108,6 +112,7 @@ protected:
 	uint8_t bigFontSize;
 	uint8_t smallFontSize;
 	boolean fontLoaded;
+	int8_t tempOffset;
 
 	RTC_DS1307* rtc;
 	SDClass* sd;

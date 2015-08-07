@@ -214,7 +214,7 @@ void Clock::writeText(const char* text, int x, int y, Digit* charset,
 void Clock::writeTemp(float actTemp, byte* buffer) {
 	if (active) {
 		char buf[7];
-		sprintf(buf, "%03.1f *C",actTemp);
+		sprintf(buf, "%03.1f *C",actTemp+(float)tempOffset);
 		DPRINTF("showing temp: %s\n",buf);
 		writeText(buf,20,0,digits,buffer);
 	}

@@ -44,6 +44,8 @@
 #define CURRENT_FONT 18
 #define LED_INDICATOR 19
 #define PIR_HOLDTIME 20
+#define DISPLAY_ANINAME 21
+#define TEMP_OFFSET 22
 
 #define BLINK_ON 0
 #define BLINK_OFF 1
@@ -51,7 +53,7 @@
 #define MODE_24H 0
 #define MODE_12H 1
 
-#define NMENU 21
+#define NMENU 23
 
 #define PIR_INACTIVE 0
 #define PIR_DIM 1
@@ -86,6 +88,7 @@ public:
 	void buttonReleased(uint8_t no, uint8_t longPress);
 
 	void notifyEvent(unsigned long event);
+	int lookupCode(unsigned long code);
 
 private:
 	static const char* mm[];

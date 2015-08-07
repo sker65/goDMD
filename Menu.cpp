@@ -81,6 +81,12 @@ const char* mmText[] = {
 		"PIR Hold Time   ",
 		"1","2","3","4",
 		".",
+		"Display AniName ",
+		"an","aus",
+		".",
+		"Temp Offset     ",
+		"-5","-4","-3","-2","-1","0","+1","+2","+3","+4","+5",
+		".",
 		"." // end mark
 };
 
@@ -140,21 +146,6 @@ void Menu::update(long now) {
 // these are the codes from the IR receiver that the irrecv method decodes
 // must be adapted for the given ir controller
 
-#if 0
-// ani colors
-#define RED_BUT   0xE85952E1
-#define GREEN_BUT 0x78CDA4DD
-#define AMBER_BUT 0xA2672345
-
-// clock color
-#define CLOCK_RED 0xD3FD9A81	
-#define CLOCK_GREEN 0x6471EC7D
-#define CLOCK_AMBER 0x9D52009D
-
-#define SEL_BUT 0xA7315F7D
-#define OPTION_BUT 0xB9C07541
-#define MENU_BUT 0xdcc45be1
-#endif
 
 #include "ir-codes.h"
 
@@ -175,11 +166,15 @@ void Menu::update(long now) {
 #define BRIGHTNESS_UP BUT_8
 #define BRIGHTNESS_DOWN BUT_7
 
+int Menu::lookupCode(unsigned long code) {
+	return code;
+}
 
 /**
  * IR Decoder notifies events here
  */
-void Menu::notifyEvent(unsigned long event) {
+void Menu::notifyEvent(unsigned long code) {
+	int event = lookupCode(code);
 	DPRINTF("Menu notify: 0x%06lx\n", event );
 	if( option[LED_INDICATOR] == 0) {
 		panel->setPixel(0,0,2); // light pixel

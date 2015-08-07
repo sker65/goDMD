@@ -25,6 +25,10 @@ public:
 		this->randomOrder = randomOrder;
 	}
 
+	void setShowName(boolean showName) {
+		this->showName = showName;
+	}
+
 protected:
 	void skipAllFrames(File& f);
 
@@ -37,6 +41,7 @@ protected:
 
 	uint16_t actAnimation;
 	uint16_t actFrame;
+	boolean showName;
 
 	uint8_t fskFilter;
 	uint8_t cycles;
@@ -49,6 +54,7 @@ protected:
 	uint8_t fsk;
 
 	uint32_t* aniIndex;
+	char aniname[40];
 
 	long nextAnimationUpdate;
 	boolean clearAfterAni;

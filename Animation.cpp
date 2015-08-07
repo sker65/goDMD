@@ -40,18 +40,20 @@ boolean Animation::begin() {
 	return true;
 }
 
-void readString(File& f) {
-	char name[40];
+char* readString(File& f, char* buf, int buflen) {
 	int len = f.read()*256+f.read();
-	for(int i=0;i<40 && i < len;i++) {
-		name[i] = f.read();
+	for(int i=0; i < len; i++) {
+		if( len<buflen) buf[i] = f.read();
+		else f.read();
 	}
-	name[len] = '\0';
-	DPRINTF("%s\n",name);
+	buf[len<buflen?len:buflen] = '\0';
+	DPRINTF("%s\n",buf);
+	return buf;
 }
 
 boolean Animation::readNextAnimation() {
 	int c = 0;
+	char buf[40];
 	seenMaskFrame = false;
 	if( randomOrder && seenAllAnimations ) {
 		actAnimation = random(numberOfAnimations);
@@ -61,10 +63,10 @@ boolean Animation::readNextAnimation() {
 		actFilePos = ani.position();
 		aniIndex[actAnimation] = actFilePos;
 		DPRINTF("name: ");
-		readString(ani); // read name
+		strcpy(aniname, (const char*)readString(ani,buf,40)); // read & copy name
 		if( version > 1 ) {
 			DPRINTF("transition: ");
-			readString(ani); // read name
+			readString(ani,buf,40); // read transition name
 		}
 		// cycles 2
 		int cyc = ani.read()*256+ani.read();
@@ -116,7 +118,7 @@ boolean Animation::readNextAnimation() {
 			DPRINTF("skipping loop exceeded number of animations: %d\n",numberOfAnimations);
 			panel.println("no ani left");
 			panel.println("check fsk set.");
-			DPRINTF("actual filepos: %d\n", ani.position() );
+			DPRINTF("actual filepos: %ld\n", ani.position() );
 			return false;
 		}
 	} // at least one must remain
@@ -201,6 +203,7 @@ uint16_t Animation::readNextFrame(long now, bool maskClock) {
 		} // for planes
 	}
 	panel.swap(true);
+	if( showName ) panel.writeText(aniname,0,0,16); // show name of animation
 	actFrame++;
 	return delay;
 }
@@ -244,6 +247,7 @@ boolean Animation::update(long now) {
 				clock.setYoffset(yoffset);
 				clock.setFont(Clock::Small);
 			}
+			clock.setMode( Clock::TIME ); // always choose simple time display, while ani playing
 
 			// debug   panel.setPixel(0,0,true);
 			clock.on();

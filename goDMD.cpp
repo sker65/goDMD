@@ -320,6 +320,8 @@ void reloadConfig() {
 	clock.setBlinkingTick(menu.getOption(BLINK_MODE)==BLINK_ON);
 	clock.requestFont(menu.getOption(CURRENT_FONT));
 	pir.setDelay((30+15*menu.getOption(PIR_HOLDTIME))*1000);
+	animation.setShowName(menu.getOption(DISPLAY_ANINAME)==0);
+	clock.setTempOffset(menu.getOption(TEMP_OFFSET)-5);
 }
 
 void testScreen() {
@@ -383,20 +385,22 @@ void loop() {
 				DPRINTF("setting rtc clock to: %d \n", unixtime);
 				clock.adjust(&dt);
 			}
-		}
+		} // read from serial
 
+		// handle IR receiver
 		if( irrecv.decode(&results) ) {
 			menu.notifyEvent(results.value);
 			irrecv.resume();
 		}
 		
 		// show with blinking led ISR is running
-		if( panel.getISRCalls() > ledInterval ) {
-			panel.resetISRCalls();
-			on = !on;
-			//digitalWrite(PIN_LED2,on);
-			ledInterval = on ? 100:3000;
-		}
+		// cannot be switched on as it interferes with card reader
+//		if( panel.getISRCalls() > ledInterval ) {
+//			panel.resetISRCalls();
+//			on = !on;
+//			//digitalWrite(PIN_LED2,on);
+//			ledInterval = on ? 100:3000;
+//		}
 
 		pir.update(now);
 		clock.update(now);
@@ -472,10 +476,12 @@ void loop() {
 					// check want to show next temp ot date or simply time
 					if( tempMode>0 && dateTemp % 3 == 0 ) {
 						state=showTemp;
+						clock.setMode(Clock::TEMP);
 						switchToAni = now + 3000 + tempMode * 1500;
 					} else {
 						if( dateMode > 0 ) {
 							state = showDate;
+							clock.setMode(Clock::DATE);
 							switchToAni = now + 3000 + dateMode * 1500;
 						}
 					}

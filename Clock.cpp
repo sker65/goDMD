@@ -137,7 +137,7 @@ void Clock::update(long now) {
 		n = rtc->now();
 		lastRtcSync = millis();
 	}
-	if (nextClockRefresh < now) {
+	if ( nextClockRefresh < now) {
 		nextClockRefresh = now + 500;
 		switch (mode) {
 		case TIME:
@@ -212,10 +212,12 @@ void Clock::writeText(const char* text, int x, int y, Digit* charset,
 
 
 void Clock::writeTemp(float actTemp, byte* buffer) {
-	char buf[7];
-	sprintf(buf, "%03.1f *C",actTemp);
-	DPRINTF("showing temp: %s\n",buf);
-	writeText(buf,20,0,digits,buffer);
+	if (active) {
+		char buf[7];
+		sprintf(buf, "%03.1f *C",actTemp);
+		DPRINTF("showing temp: %s\n",buf);
+		writeText(buf,20,0,digits,buffer);
+	}
 }
 
 void Clock::writeDate(long now, byte* buffer) {

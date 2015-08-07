@@ -8,7 +8,7 @@
 #ifndef VERSION_H_
 #define VERSION_H_
 
-#define VERSION "goDmd v1.05"
+#define VERSION "goDmd v1.06"
 
 
 #endif /* VERSION_H_ */

@@ -167,17 +167,18 @@ uint16_t Animation::readNextFrame(long now, bool maskClock) {
 
 				// there was a masking plane -> use it
 				if( useMask ) {
+					clock.setMode(Clock::TIME); // fixes #27
 					clearAfterAni = false;
 					// allocate buffer for time to mask
 					byte timebuf[buflen];
 					memset(timebuf,0,buflen);
 					clock.writeTimeIntern(now,timebuf); // render time
+
 					byte* pDst = timebuf;
 					byte* pMask = mask;
 					// mask time
 					for(int j = 0; j< buflen; j++) {
-						*pDst &= ~( *pMask++ ); // mask in
-						pDst++;
+						*pDst++ &= ~( *pMask++ ); // mask in
 					}
 					// copy masked time to time plane
 					memcpy((void*)panel.getBuffers()[2],timebuf,buflen);
@@ -212,7 +213,7 @@ boolean Animation::update(long now) {
 	if( now> nextAnimationUpdate) {
 		if( hold ) {
 			hold = false;
-			// check font transition small to big, if so clear anyway
+			// check for transition small to big, if so clear anyway
 			if( clock.getFont() == Clock::Small ) {
 				clock.setFont(Clock::Big);
 				panel.clearTime();

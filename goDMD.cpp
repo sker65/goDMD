@@ -19,6 +19,8 @@
 #include "PirHandler.h"
 #include "debug.h"
 #include "version.h"
+#include <malloc.h>
+#include "macros.h"
 
 #define DS18B20_PIN CON2_1
 
@@ -49,8 +51,9 @@ RTC_DS1307 rtc;
 
 Clock clock(panel, rtc, &SD, &sensor);
 Animation animation(SD, panel, clock);
+NodeMcu node;
 
-Menu menu(&panel, &clock, &SD);
+Menu menu(&panel, &clock, &SD, &node);
 
 IRrecv irrecv(RECV_PIN);
 decode_results results;
@@ -61,6 +64,13 @@ long nextPixel = 0;
 int x = 0;
 int y = 0;
 bool on=false;
+
+
+extern "C" char* sbrk(int incr);
+int getFreeRam() {
+  char top;
+  return &top - reinterpret_cast<char*>(sbrk(0));
+}
 
 // define a char out hook for printf
 extern "C"
@@ -145,6 +155,7 @@ void selftest() {
 		}
 		if( irrecv.decode(&results) ) {
 			lastIr = results.value;
+			DPRINTF("ircode received %04x\n",lastIr);
 			irrecv.resume();
 			if( results.value == BUT_9 ) run = false;
 		}
@@ -181,53 +192,6 @@ void selftest() {
 }
 
 
-/*void plotPoints() {
-	int v = 1;
-	while( true ) {
-		for( y = 0; y<32;y++) {
-			for( int x = 0; x<128;x++) {
-				panel.setPixel(x,y,v);
-				delay(5);
-			}
-		}
-		v ^= 1;
-	}
-}*/
-
-/*void xsetup() {
-
-	Serial.begin(115200);
-
-	for( int i =0; i<5;i++) {
-		DPRINTF("wait %lu \n", millis());
-		delay(1000);
-	}
-
-	  Serial1.begin(9600);
-
-	  delay(5000);
-
-	  Serial1.print("AT+RST\r");
-	  //Serial1.setTimeout(8000);
-	  delay(1000);
-	  while( true ) {
-		  String c = Serial1.readString();
-		  Serial.print(c.c_str());
-	  }
-
-	  if (Serial1.find("ready")) {
-		  Serial.println("Module is ready");
-	  } else {
-	    Serial.println("ESP8266 Module did not respond.");
-	    Serial.println("Enter Commands Manually.");
-	  }
-}
-
-void xloop() {
-	delay(1999);
-}*/
-
-
 void setup() {
 	Serial.begin(9600);
 #ifdef _DxEBUG
@@ -241,6 +205,8 @@ void setup() {
 
 	panel.setAnimationColor(1);
 	panel.setTimeColor(1);
+
+	node.begin();
 
 	// start ir receiver
 	irrecv.enableIRIn();
@@ -321,7 +287,7 @@ void reloadConfig() {
 	clock.requestFont(menu.getOption(CURRENT_FONT));
 	pir.setDelay((30+15*menu.getOption(PIR_HOLDTIME))*1000);
 	animation.setShowName(menu.getOption(DISPLAY_ANINAME)==0);
-	clock.setTempOffset(menu.getOption(TEMP_OFFSET)-5);
+	clock.setTempOffset(menu.getOption(TEMP_OFFSET)-7);
 }
 
 void testScreen() {
@@ -338,10 +304,9 @@ enum State { showTime, showDate, showAni, showMenu, freeze,
 	pirNobodyThere, showTemp
 };
 
-
 void loop() {
 	long now = millis();
-	long switchToAni = 0;
+
 	State state = showTime;
 
 	//testScreen();
@@ -349,19 +314,38 @@ void loop() {
 	menu.loadOptions();
 	reloadConfig();
 
-	switchToAni = now + clockShowTime;
-
-	long switchToDate = 0;
-
 	uint32_t ledInterval = 3000;
+
+	long switchToAni = now + clockShowTime;
 
 	long nextColorChange = 0;
 
 	int stateCycle = 0;
 	int dateTemp = 0;
 
+	/*int next = millis();
+
+	while( true ) {
+		long now = millis();
+		if( now > next ) {
+			next = now + 5000;
+			Serial1.println("=node.info()");
+		}
+		// just hand over
+		if( Serial.available() ) {
+			int in = Serial.read();
+			Serial1.write(in);
+		}
+		if( Serial1.available()) {
+			int out = Serial1.read();
+			Serial.write(out);
+		}
+	}*/
+
 	while(true) {
 		long now = millis();
+
+		node.update(now);
 
 		if( Serial.available() ) {
 			String ps = Serial.readStringUntil('\n');
@@ -382,7 +366,7 @@ void loop() {
 				// simple hack to adjust tz CEST +2 hours
 				unixtime += 60*60*2;
 				DateTime dt(unixtime);
-				DPRINTF("setting rtc clock to: %d \n", unixtime);
+				DPRINTF("setting rtc clock to: %ld \n", unixtime);
 				clock.adjust(&dt);
 			}
 		} // read from serial
@@ -395,12 +379,13 @@ void loop() {
 		
 		// show with blinking led ISR is running
 		// cannot be switched on as it interferes with card reader
-//		if( panel.getISRCalls() > ledInterval ) {
-//			panel.resetISRCalls();
-//			on = !on;
-//			//digitalWrite(PIN_LED2,on);
-//			ledInterval = on ? 100:3000;
-//		}
+		if( panel.getISRCalls() > ledInterval ) {
+			panel.resetISRCalls();
+			on = !on;
+			//digitalWrite(PIN_LED2,on);
+			ledInterval = on ? 10000:10000;
+			//DPRINTF("free ram %d\n", getFreeRam());
+		}
 
 		pir.update(now);
 		clock.update(now);
@@ -417,7 +402,7 @@ void loop() {
 		switch( state ) {
 		case showTime:
 			clock.on();
-			if( now > switchToAni ) {
+			if( SAVECMP( now , switchToAni) ) {
 				if(pir.somebodyHere()) {
 					state = showAni;
 					clock.off();
@@ -450,7 +435,7 @@ void loop() {
 		case showTemp:
 			clock.setMode(Clock::TEMP);
 			clock.on();
-			if( now > switchToAni ) {
+			if( SAVECMP( now , switchToAni ) ) {
 				state = showAni;
 				clock.off();
 			}
@@ -460,7 +445,7 @@ void loop() {
 		case showDate:
 			clock.setMode(Clock::DATE);
 			clock.on();
-			if( now > switchToAni ) {
+			if( SAVECMP( now , switchToAni ) ) {
 				state = showAni;
 				clock.off();
 			}
@@ -492,7 +477,7 @@ void loop() {
 				}
 
 				// check color change
-				if(now > nextColorChange ) {
+				if( SAVECMP( now , nextColorChange ) ) {
 					nextColorChange = now + 60000;
 					if( menu.getOption(SET_COLOR_ANI)==COLOR_CHANGE ) {
 						panel.setAnimationColor(random(3));
@@ -519,9 +504,6 @@ void loop() {
 				ledInterval = 3000;
 				switchToAni = now + clockShowTime; // millis to show clock
 				state = showTime;
-				if( dateMode == 1 ) {
-					switchToDate = now + clockShowTime/2; // nach der halben Zeit kommt das Datum
-				}
 			}
 			break;
 		case freeze:

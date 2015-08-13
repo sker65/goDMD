@@ -12,6 +12,7 @@
 #include "Clock.h"
 #include "Button.h"
 #include "ClickHandler.h"
+#include "NodeMcu.h"
 
 // not on pic micro #define PIN_B1 3
 // not on PIC micro #define PIN_B2 5
@@ -46,6 +47,7 @@
 #define PIR_HOLDTIME 20
 #define DISPLAY_ANINAME 21
 #define TEMP_OFFSET 22
+#define MENU_NET_CONFIG 23
 
 #define BLINK_ON 0
 #define BLINK_OFF 1
@@ -53,7 +55,7 @@
 #define MODE_24H 0
 #define MODE_12H 1
 
-#define NMENU 23
+#define NMENU 24
 
 #define PIR_INACTIVE 0
 #define PIR_DIM 1
@@ -65,7 +67,7 @@ class SDClass;
 class Menu : public ClickHandler {
 
 public:
-	Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd);
+	Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd, NodeMcu* node);
 
 	virtual ~Menu();
 
@@ -86,6 +88,9 @@ public:
 	uint8_t getOption(int index) {return option[index];}
 
 	void buttonReleased(uint8_t no, uint8_t longPress);
+	void doNetConfig(uint8_t n, uint8_t longClick);
+
+	enum NetMenu { IP, LISTAP, PASSWD };
 
 	void notifyEvent(unsigned long event);
 	int lookupCode(unsigned long code);
@@ -95,6 +100,19 @@ private:
 	LEDMatrixPanel* panel;
 	Clock* clock;
 	SDClass* sd;
+	NodeMcu* node;
+
+	char netOption[18];
+	char netValue[18];
+	NetMenu netMenu;
+	bool aplistRead;
+	char actualSsid[24];
+	char netPasswd[64];
+	char* pActPasswdChar;
+	char passChar;
+	Result* apList;
+	Result* actAp;
+
 	Button menuButton;
 	//Button selButton;
 	bool active;
@@ -102,6 +120,7 @@ private:
 	bool redrawNeeded;
 
 	bool clockDirty;
+	bool netConfig;
 
 	uint8_t actMenu;
 	uint8_t actOption;

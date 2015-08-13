@@ -85,14 +85,17 @@ const char* mmText[] = {
 		"an","aus",
 		".",
 		"Temp Offset     ",
-		"-5","-4","-3","-2","-1","0","+1","+2","+3","+4","+5",
+		"-7","-6","-5","-4","-3","-2","-1","0","+1","+2","+3",
+		".",
+		"Net Config      ",
+		"no wifi ext",
 		".",
 		"." // end mark
 };
 
 
-Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd ) :
-		panel( panel ), clock(clock), sd(sd)
+Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd, NodeMcu* node ) :
+		panel( panel ), clock(clock), sd(sd), node(node)
 		,menuButton(PIN_BTN1, BUTTON_MENU, this)
 		//,selButton(PIN_B2, BUTTON_SEL,this)
 		{
@@ -127,6 +130,9 @@ Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd ) :
 
 	loadOptions();
 	clockDirty = false;
+	netMenu = IP;
+	pActPasswdChar = netPasswd;
+	passChar = 'A';
 }
 
 Menu::~Menu() {
@@ -277,6 +283,61 @@ void Menu::loadOptions() {
 	}
 }
 
+
+void Menu::doNetConfig(uint8_t n, uint8_t longClick) {
+	char* ip;
+	switch(netMenu) {
+	case IP:
+		ip = node->getIp();
+		strncpy(netOption,"IP-Addr.",17);
+		strncpy(netValue,ip,17);
+		break;
+
+	case LISTAP:
+		if( !aplistRead ) {
+			actAp = apList = node->getApList();
+			aplistRead = true;
+		}
+		// keep actual ap name pointer / name
+		strncpy(netOption,"SSID",17);
+		if( actAp != NULL && actAp->line != NULL) {
+			strncpy(actualSsid, actAp->line,17);
+		}
+		strncpy(netValue,actualSsid,17);
+		if( n == BUT_PLUS ) {
+			if( actAp != NULL && actAp->next != NULL ) {
+				actAp = actAp->next;
+			} else {
+				actAp = apList;
+			}
+		}
+		break;
+
+	case PASSWD:
+		strncpy(netOption,"Password",17);
+		strncpy(netValue,netPasswd,17);
+		if( n == BUT_2 ) {
+			if( passChar++ == 128 ) passChar = 32;
+		}
+		if( n == BUT_8 ) {
+			if( passChar-- == 31 ) passChar = 127;
+		}
+		if( n == BUT_6 ) {
+			*pActPasswdChar++ = passChar;
+		}
+		if( n == BUT_4 ) {
+			*pActPasswdChar = 0;
+			if( pActPasswdChar > netPasswd ) pActPasswdChar--;
+		}
+		if( n == BUT_PLUS) {
+			node->configAp(actualSsid, netPasswd);
+			netMenu = IP;
+		}
+		break;
+	}
+
+}
+
 /**
  * callback with is called from buttons
  * TODO: actually two buttons are expected, but piguino micro has only
@@ -286,6 +347,14 @@ void Menu::loadOptions() {
 void Menu::buttonReleased(uint8_t n, uint8_t longClick) {
 	DPRINTF("button %d %d \n", n, longClick);
 	if( active ) {
+		if( netConfig ) {
+			if( n==BUTTON_MENU && longClick==1 ) {
+				netConfig = false;
+			} else {
+				doNetConfig(n,longClick);
+				return;
+			}
+		}
 		redrawNeeded = true;
 		if( n==BUTTON_MENU && longClick==2 ) {
 			saveOption();
@@ -308,6 +377,10 @@ void Menu::buttonReleased(uint8_t n, uint8_t longClick) {
 			DPRINTF("nOptions[actMenu]: %d\n", nOptions[actMenu]);
 			if( actMenu<0 || actOption >= nOptions[actMenu] ) actOption = 0;
 			DPRINTF("trimmed actOption: %d\n", actOption);
+			if( actMenu == MENU_NET_CONFIG && node->isNodeMcuDetected() ) {
+				netConfig=true;
+				redrawNeeded = true;
+			}
 		}
 		if( n==BUTTON_MENU && longClick==0 ) {
 			actOption++;
@@ -343,8 +416,13 @@ void Menu::redrawMenu() {
 	//panel.writeText(op,0,8,16);
 	if( active ) {
 		panel->writeText("Config Menu",0,0,16);
-		panel->writeText(mmText[i],0,8,16);
-		panel->writeText(op,0,16,16);
+		if( netConfig ) {
+			panel->writeText(netOption,0,8,16);
+			panel->writeText(netValue,0,16,16);
+		} else {
+			panel->writeText(mmText[i],0,8,16);
+			panel->writeText(op,0,16,16);
+		}
 		/* farb streifen
 		if( actMenu == SET_COLOR_CLOCK) {
 			if( actOption<15) {

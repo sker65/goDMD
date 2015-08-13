@@ -7,6 +7,7 @@
 
 #include "Animation.h"
 #include "debug.h"
+#include "macros.h"
 
 
 Animation::Animation(SDClass& sd, LEDMatrixPanel& panel, Clock& clock) :
@@ -210,7 +211,7 @@ uint16_t Animation::readNextFrame(long now, bool maskClock) {
 }
 
 boolean Animation::update(long now) {
-	if( now> nextAnimationUpdate) {
+	if( SAVECMP( now , nextAnimationUpdate) ) {
 		if( hold ) {
 			hold = false;
 			// check for transition small to big, if so clear anyway

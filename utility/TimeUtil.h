@@ -22,9 +22,18 @@ public:
 	uint8_t month;
 	uint16_t year;
 	uint8_t wday;
+	int utcOffset;
 
-	void gettime(uint32_t sec);
-	void summertime();
+	void setUTCtime(uint32_t sec);
+	void doSummertimeAdjust();
+
+	int getUtcOffset() const {
+		return utcOffset;
+	}
+
+	void setUtcOffset(int utcOffset) {
+		this->utcOffset = utcOffset;
+	}
 
 private:
 

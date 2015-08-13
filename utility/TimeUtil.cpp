@@ -20,13 +20,14 @@ TimeUtil::TimeUtil() {
 	this->second = 0;
 	this->wday = 0;
 	this->year = 0;
+	this->utcOffset = 0;
 }
 
 TimeUtil::~TimeUtil() {
 	// TODO Auto-generated destructor stub
 }
 
-void TimeUtil::summertime() {
+void TimeUtil::doSummertimeAdjust() {
 	uint8_t hour, day, wday, month;      // locals for faster access
 
 	hour = this->hour;
@@ -62,12 +63,14 @@ void TimeUtil::summertime() {
 	this->wday = wday;
 }
 
-void TimeUtil::gettime(uint32_t sec) {
+void TimeUtil::setUTCtime(uint32_t sec) {
 	uint16_t day;
 	uint8_t year;
 	uint16_t dayofyear;
 	uint8_t leap400;
 	uint8_t month;
+
+	sec += (int)utcOffset * 3600;
 
 	this->second = sec % 60;
 	sec /= 60;

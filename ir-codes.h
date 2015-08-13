@@ -10,7 +10,7 @@
 
 // header file with codes from the final ir receiver
 
-#if 0
+#if 1
 #define BUT_CH_MINUS 	0x00ffa25d
 #define BUT_CH 			0x00ff629d
 #define BUT_CH_PLUS 	0x00ffe21d
@@ -34,7 +34,7 @@
 #define BUT_9 			0x00ff52ad
 #endif
 
-#if 1
+#if 0
 #define BUT_CH_MINUS 	0xe318261b
 #define BUT_CH 			0x00511dbb
 #define BUT_CH_PLUS 	0xee885d7f

@@ -45,7 +45,10 @@ public:
 	};
 
 	enum CallState {
-		IDLE, PENDING, RESULT_RECEIVED
+		IDLE, 		// idle, call can be placed
+		PENDING, 	// call is pending, result outstanding
+		RESULT_RECEIVED, // result has received, but not yet processed
+		TIMEOUT		// call timeout response was too late
 	};
 
 	void update(uint32_t now);
@@ -55,14 +58,25 @@ public:
 private:
 	char lineBuffer[64];
 	char* pLine;
-	bool sendCmd(const char* cmd, bool parseResult);
+	int sendCmd(const char* cmd, int correlation);
 	void clearResult();
 	Result* lastResult;
 	bool nodeMcuDetected;
-	long lasttimeChecked;
+	uint32_t lasttimeChecked;
 	int lastCh;
 	ReadState readState;
 	CallState callState;
+	int correlation;
+	uint32_t callSend;
+	bool ntpObjectSet;
 };
+
+#define NODE_TIMEOUT 15000
+
+// correlations for async calls
+#define NODE_INFO 1
+#define LIST_AP 2
+#define NTP_SYNC 3
+#define GET_IP 4
 
 #endif /* NODEMCU_H_ */

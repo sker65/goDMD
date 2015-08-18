@@ -9,9 +9,10 @@
 #include <IRremote.h>
 #include <OneWire.h>
 #include <SD.h>
-#include <DallasTemperature.h>
 #include <RTClib.h>
+#include <DallasTemperature.h>
 
+#include "NtpCallbackHandler.h"
 #include "LEDMatrixPanel.h"
 #include "Clock.h"
 #include "Animation.h"
@@ -51,7 +52,11 @@ RTC_DS1307 rtc;
 
 Clock clock(panel, rtc, &SD, &sensor);
 Animation animation(SD, panel, clock);
-NodeMcu node;
+
+// set time zone to 1 as default for germany
+NtpCallbackHandler ntpCallbackHandler(&clock, 1);
+
+NodeMcu node(&ntpCallbackHandler);
 
 Menu menu(&panel, &clock, &SD, &node);
 
@@ -351,8 +356,8 @@ void loop() {
 			String ps = Serial.readStringUntil('\n');
 			const char* p = ps.c_str();
 			DPRINTF("received string: '%s'\n",p);
-			// 2015-05-09T11:55:13+0200
-			//SETTIME<seconds since 1970>
+			// date +SETTIME%s > /dev/ttyACM0
+			// SETTIME<seconds since 1970 utc>
 			if( strncmp(p,"SETTIME",7)==0) {
 				p += 7;
 				long unixtime = 0;

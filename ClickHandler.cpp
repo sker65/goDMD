@@ -8,11 +8,8 @@
 #include "ClickHandler.h"
 
 ClickHandler::ClickHandler() {
-	// TODO Auto-generated constructor stub
-
 }
 
 ClickHandler::~ClickHandler() {
-	// TODO Auto-generated destructor stub
 }
 

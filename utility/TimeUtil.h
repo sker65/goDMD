@@ -22,20 +22,10 @@ public:
 	uint8_t month;
 	uint16_t year;
 	uint8_t wday;
-	int utcOffset;
 
 	void setUTCtime(uint32_t sec);
-	void doSummertimeAdjust();
+	bool isDaylightSaving();
 
-	int getUtcOffset() const {
-		return utcOffset;
-	}
-
-	void setUtcOffset(int utcOffset) {
-		this->utcOffset = utcOffset;
-	}
-
-private:
 
 };
 

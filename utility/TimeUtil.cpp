@@ -20,14 +20,12 @@ TimeUtil::TimeUtil() {
 	this->second = 0;
 	this->wday = 0;
 	this->year = 0;
-	this->utcOffset = 0;
 }
 
 TimeUtil::~TimeUtil() {
-	// TODO Auto-generated destructor stub
 }
 
-void TimeUtil::doSummertimeAdjust() {
+bool TimeUtil::isDaylightSaving() {
 	uint8_t hour, day, wday, month;      // locals for faster access
 
 	hour = this->hour;
@@ -36,16 +34,17 @@ void TimeUtil::doSummertimeAdjust() {
 	month = this->month;
 
 	if (month < 3 || month > 10)      // month 1, 2, 11, 12
-		return;          // -> Winter
+		return false;          // -> Winter
 
 	if (day - wday >= 25 && (wday || hour >= 2)) { // after last Sunday 2:00
 		if (month == 10)        // October -> Winter
-			return;
+			return false;
 	} else {          // before last Sunday 2:00
 		if (month == 3)        // March -> Winter
-			return;
+			return false;
 	}
-	hour++;          // add one hour
+	return true;
+	/*hour++;          // add one hour
 	if (hour == 24) {        // next day
 		hour = 0;
 		wday++;          // next weekday
@@ -60,7 +59,7 @@ void TimeUtil::doSummertimeAdjust() {
 	this->month = month;
 	this->hour = hour;
 	this->day = day;
-	this->wday = wday;
+	this->wday = wday;*/
 }
 
 void TimeUtil::setUTCtime(uint32_t sec) {
@@ -69,8 +68,6 @@ void TimeUtil::setUTCtime(uint32_t sec) {
 	uint16_t dayofyear;
 	uint8_t leap400;
 	uint8_t month;
-
-	sec += (int)utcOffset * 3600;
 
 	this->second = sec % 60;
 	sec /= 60;

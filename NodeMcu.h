@@ -16,20 +16,25 @@ public:
 	Result* next;
 };
 
+class NtpCallback {
+public:
+	virtual ~NtpCallback(){};
+	virtual void setUtcTime(uint32_t utcTime) = 0;
+};
+
 class NodeMcu {
 public:
-	NodeMcu();
-	virtual ~NodeMcu();
-
 	bool isNodeMcuDetected() const {
 		return nodeMcuDetected;
 	}
 
+	NodeMcu(NtpCallback* callback);
+	virtual ~NodeMcu();
 	void begin();
 
 	Result* getApList();
 
-	void configAp(char* name, char* password);
+	void configAp(const char* name, const char* password);
 
 	char* getIp();
 
@@ -53,15 +58,16 @@ public:
 
 	void update(uint32_t now);
 
+//private:
 	void checkNodeInfo();
+	bool nodeMcuDetected;
 
 private:
 	char lineBuffer[64];
 	char* pLine;
-	int sendCmd(const char* cmd, int correlation);
+	void sendCmd(const char* cmd, int correlation);
 	void clearResult();
 	Result* lastResult;
-	bool nodeMcuDetected;
 	uint32_t lasttimeChecked;
 	int lastCh;
 	ReadState readState;
@@ -69,6 +75,7 @@ private:
 	int correlation;
 	uint32_t callSend;
 	bool ntpObjectSet;
+	NtpCallback* callback;
 };
 
 #define NODE_TIMEOUT 15000

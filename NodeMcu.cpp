@@ -11,7 +11,7 @@
 #include "WProgram.h"
 #include "debug.h"
 
-NodeMcu::NodeMcu() {
+NodeMcu::NodeMcu(NtpCallback* callback) {
 	lasttimeChecked = 0L;
 	nodeMcuDetected = false;
 	lastResult = NULL;
@@ -22,6 +22,7 @@ NodeMcu::NodeMcu() {
 	correlation = 0;
 	callSend = 0;
 	ntpObjectSet = false;
+	this->callback = callback;
 }
 
 NodeMcu::~NodeMcu() {
@@ -30,14 +31,14 @@ NodeMcu::~NodeMcu() {
 void NodeMcu::begin() {
 	Serial1.begin(9600);
 	// cmd echo off
-	sendCmd("setup(0,9600,8,0,1,0)\r\n", false);
+	sendCmd("uart.setup(0,9600,8,0,1,0)\r\n", false);
 }
 
 const char* setModeStation = "wifi.setmode(wifi.STATION)\r\n";
 
 const char* ntp =
-		"ntp = ({\n"
-				"    hour=0,\n"
+		"ntp = ({\n";
+				/*"    hour=0,\n"
 				"    minute=0,\n"
 				"    second=0,\n"
 				"    lastsync=0,\n"
@@ -75,10 +76,10 @@ const char* ntp =
 				"        self.minute = self.ustamp % 3600 / 60\n"
 				"        self.second = self.ustamp % 60\n"
 				"    end,\n"
-				"})\n";
+				"})\n";*/
 
 const char* getApListCmd =
-		"wifi.sta.getap(function(t) for k,v in pairs(t) do print(\"# \"..k) end print(\"##\") end)\r\n";
+		"wifi.sta.getap(function(t) print() for k,v in pairs(t) do print(\"# \"..k) end print(\"##\") end)\r\n";
 
 Result* NodeMcu::getApList() {
 	sendCmd(setModeStation, 0);
@@ -93,14 +94,14 @@ Result* NodeMcu::getApList() {
 	return lastResult;
 }
 
-void NodeMcu::configAp(char* ssid, char* password) {
+void NodeMcu::configAp(const char* ssid, const char* password) {
 	char buf[255];
 	sprintf(buf, "wifi.sta.config(\"%s\", \"%s\")\r\n", ssid, password);
 	sendCmd(buf, 0);
 }
 
 const char* getIpCmd =
-		"ip = wifi.sta.getip() print(\"# \"..ip) print(\"##\")\r\n";
+		"ip = wifi.sta.getip() print() print(\"# \"..(ip and ip or \"nil\")) print(\"##\")\r\n";
 
 char* NodeMcu::getIp() {
 	sendCmd(getIpCmd, GET_IP);
@@ -113,42 +114,42 @@ char* NodeMcu::getIp() {
 	return lastResult->line;
 }
 
-const char* getUtcFromNtpCmd = "ntp:sync(function(t) print( \"# \" .. t.ustamp ) print \"##\" end)\r\n";
+const char* getUtcFromNtpCmd = "ntp:sync(function(t) print() print( \"# \" .. t.ustamp ) print \"##\" end)\r\n";
 
 long NodeMcu::getUtcFromNtp() {
 	sendCmd( getUtcFromNtpCmd, NTP_SYNC);
 	return 0;
 }
 
-int NodeMcu::sendCmd(const char* cmd, int correlation) {
+void NodeMcu::sendCmd(const char* cmd, int correlation) {
 	const char* p = cmd;
 	const char* p1 = cmd;
 
 	if (callState == IDLE) {
+		if( correlation != 0 ) callState = PENDING;
 		clearResult();
+		this->correlation = correlation;
+
 		while (*p != 0) {
 			callSend = millis();
 			Serial1.write(*p);
 			if (*p == '\n') { // line completed, wait for ack
-				char line[64];
-				memset(line, 0, 64);
-				strncpy(line, p1, p - p1);
-				DPRINTF("send line: '%s'", line);
-				p1 = p + 1;
+//				char line[64];
+//				memset(line, 0, 64);
+//				strncpy(line, p1, p - p1);
+//				DPRINTF("send line: '%s'", line);
+//				p1 = p + 1;
 				do {
 					readResponse();
 					if (millis() > callSend + NODE_TIMEOUT) {
 						callState = TIMEOUT;
-						return 0;
+						return;
 					}
 				} while (readState != READING_PROMPT_SPC);
 			}
 			p++;
 		}
-		if( correlation != 0 ) callState = PENDING;
-		return correlation;
-	} else {
-		return 0;
+
 	}
 }
 
@@ -176,6 +177,8 @@ bool NodeMcu::readResponse() {
 		break;
 	case READING_PROMPT_SPC:
 		readState = READING_UNKNOWN;
+		if (ch == '\n' || ch == '\r')
+			readState = READING_LF;
 		break;
 	case READING_RESULT_TAG:
 		if (ch == ' ')
@@ -186,17 +189,18 @@ bool NodeMcu::readResponse() {
 	case READING_RESULT_SPC:
 		readState = READING_RESULT_PAYLOAD;
 		pLine = lineBuffer;
+		*pLine++ = ch;
 		break;
 	case READING_RESULT_PAYLOAD:
 		if (ch == '\n' || ch == '\r') {
 			readState = READING_LF;
 			*pLine = 0;
-			Result* p = lastResult;
-			while (p != NULL)
-				p = p->next;
-			p = (Result*) malloc(sizeof(Result));
-			p->line = (char*) malloc(strlen(lineBuffer));
-			strcpy(p->line, lineBuffer);
+			// construct new element
+			Result* r = (Result*) malloc(sizeof(Result));
+			r->line = (char*) malloc(strlen(lineBuffer)+1);
+			strcpy(r->line, lineBuffer);
+			r->next = lastResult;
+			lastResult = r;
 			break;
 		}
 		if (pLine - lineBuffer < 63) {
@@ -204,6 +208,10 @@ bool NodeMcu::readResponse() {
 		}
 		break;
 	case READING_RESULT_END:
+		callState = RESULT_RECEIVED;
+		if (ch == '\n' || ch == '\r') {
+			readState = READING_LF;
+		}
 		break;
 	}
 	return true;
@@ -238,6 +246,9 @@ void NodeMcu::update(uint32_t now) {
 
 	if (callState == RESULT_RECEIVED && correlation == NTP_SYNC) {
 		DPRINTF("utc timestamp received: %s\r\n", lastResult->line);
+		uint32_t utc;
+		sscanf(lastResult->line, "%uld",&utc);
+		callback->setUtcTime(utc);
 		callState = IDLE;
 	}
 }
@@ -252,6 +263,7 @@ void NodeMcu::clearResult() {
 		free(current->line);
 		free(current);
 	}
+	lastResult = NULL;
 }
 
 // das muss immer gerufen werden können und darf nicht blockieren

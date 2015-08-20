@@ -60,7 +60,7 @@ void Clock::readFont(File* f, Digit* p, int _size) {
 	j = 0;
 	size = f->read();
 	if( _size != size ) {
-		DPRINTF("size of mask does not match data!!\n");
+		DPRINTF2("size of mask does not match data!!\n");
 	}
 	while(size-- > 0) {
 		f->read(); // ignore char
@@ -75,7 +75,7 @@ void Clock::readFont(File* f, Digit* p, int _size) {
 /** free memory used by current font.*/
 boolean Clock::freeFont() {
 	if( fontLoaded ) {
-		DPRINTF("free front\n");
+		DPRINTF2("free front\n");
 		for( int i = smallFontSize-1; i>=0; i--) {
 			free(smallDigits[i].data);
 		}
@@ -170,11 +170,11 @@ void Clock::update(long now) {
 
 void dumpDigit(Digit* d) {
 	DPRINTF("w: %d, h: %d, size: %d\n", d->width, d->height, d->sizeInBytes);
-	DPRINTF("data: \n");
+	DPRINTF2("data: \n");
 	for(int i= 0; i<d->sizeInBytes; i++) {
 		DPRINTF("0x%02x, ", d->data[i] );
 		if( (i % 16) == 0 ) {
-			DPRINTF("\n");
+			DPRINTF2("\n");
 		}
 	}
 }

@@ -24,7 +24,7 @@ void NtpCallbackHandler::setUtcTime(uint32_t utcTime) {
 	DPRINTF("timeutil: month: %d, day: %d, wday: %d, hour: %d\n",
 			timeUtil.month, timeUtil.day, timeUtil.wday, timeUtil.hour);
 	if( timeUtil.isDaylightSaving()) {
-		DPRINTF("timeutil: isDaylightSaving()->true\n");
+		DPRINTF2("timeutil: isDaylightSaving()->true\n");
 		utcTime += 3600;
 	}
 	DateTime dt(utcTime);

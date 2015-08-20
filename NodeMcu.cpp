@@ -8,6 +8,8 @@
 #include "NodeMcu.h"
 
 #include <stddef.h>
+#include <string.h>
+
 #include "WProgram.h"
 #include "debug.h"
 
@@ -26,28 +28,34 @@ NodeMcu::NodeMcu(NtpCallback* callback) {
 	serialDeviceDetected = false;
 	nextNtpSync = 1<<31;
 	nextUpdate = 0;
+	cmdBuffer = NULL;
 }
 
 NodeMcu::~NodeMcu() {
 }
 
 void NodeMcu::begin() {
+	DPRINTF2("node::begin: starting serial1\n");
 	Serial1.begin(9600);
 	Serial1.write('\n');
 }
 
 void NodeMcu::start() {
+	delay(200);
+	DPRINTF2("node::start: serial1 probing\n");
 	if( Serial1.available()) {
 		serialDeviceDetected = true;
 		while( Serial1.available()) Serial1.read();
-		DPRINTF("serial device on uart1 detected.\n");
+		DPRINTF2("serial device on uart1 detected.\n");
 		// cmd echo off
 
 		//sendCmd("node.restart()\r\n", false);
 
-		sendCmd("uart.setup( 0,9600,8,0,1,0 )\r\n", false);
+		sendCmd("uart.setup( 0,9600,8,0,1,0 )\r\n", 0);
 		//sendCmd("uart.setup( 0,115200,8,0,1,0 )\r\n", false);
 		//Serial1.begin(115200);
+	} else {
+		DPRINTF2("NO serial device detected.\n");
 	}
 }
 
@@ -110,7 +118,7 @@ Result* NodeMcu::getApList() {
 			break;
 		}
 	}
-	callState = IDLE;
+	setCallState(IDLE);
 	return lastResult;
 }
 
@@ -128,12 +136,12 @@ char* NodeMcu::getIp() {
 	while ( true ) {
 		update(millis());
 		//delay(300);
-		DPRINTF("wait for result\n");
+		DPRINTF2("wait for result\n");
 		if (callState == RESULT_RECEIVED && correlation == GET_IP)
 			break;
 		if( callState == TIMEOUT) return "error";
 	}
-	callState = IDLE;
+	setCallState(IDLE);
 	DPRINTF("getIp result: %s\n", lastResult->line );
 	return lastResult->line;
 }
@@ -145,40 +153,67 @@ long NodeMcu::getUtcFromNtp() {
 	return 0;
 }
 
+void NodeMcu::sendCmdLine() {
+	while (*pSendCmd != 0) {
+		callSend = millis();
+		Serial1.write(*pSendCmd);
+		if (*pSendCmd == '\n') { // line completed, wait for ack
+			Serial1.flush();
+			char line[256];
+			memset(line, 0, 256);
+			int len = pSendCmd - p1SendCmd;
+			if( *(pSendCmd-1)=='\r') len--;
+			strncpy(line, p1SendCmd, len);
+			DPRINTF("send line: '%s'\n", line);
+			p1SendCmd = pSendCmd+1;
+			do {
+				readResponse();
+				if (millis() > callSend + NODE_TIMEOUT) {
+					DPRINTF2("sendCmd runs into TIMEOUT\n");
+					setCallState(TIMEOUT);
+					return;
+				}
+			} while (readState != READING_PROMPT_SPC);
+			if( *(pSendCmd+1) != 0 ) {
+				DPRINTF2("multiline cmd continue ...\n");
+				pSendCmd++;
+				readState = READING_UNKNOWN;
+				return;  // more to come
+			}
+			break;
+		} // line end
+		pSendCmd++;
+	} // while (cmd end)
+	if( cmdBuffer != NULL ) {
+		free( (void*)cmdBuffer );
+		cmdBuffer = NULL;
+	}
+	if (callState == SENDING) {
+		if (correlation != 0) {
+			setCallState(PENDING);
+		} else {
+			setCallState(IDLE);
+		}
+	}
+}
+
+
 void NodeMcu::sendCmd(const char* cmd, int correlation) {
-	const char* p = cmd;
-	const char* p1 = cmd;
 
 	if (callState == IDLE && serialDeviceDetected) {
+
+		if( cmdBuffer != NULL ) free( (void*)cmdBuffer );
+		cmdBuffer =  (char*) malloc( strlen(cmd) + 1);
+		strcpy( cmdBuffer, cmd);
+
+		pSendCmd = cmdBuffer;
+		p1SendCmd = cmdBuffer;
+
 		readState = READING_UNKNOWN;
-		if( correlation != 0 ) callState = PENDING;
+		setCallState(SENDING);
 		clearResult();
 		this->correlation = correlation;
-
-		while (*p != 0) {
-			callSend = millis();
-			Serial1.write(*p);
-			if (*p == '\n') { // line completed, wait for ack
-				Serial1.flush();
-				char line[256];
-				memset(line, 0, 256);
-				int len = p - p1;
-				if( *(p-1)=='\r') len--;
-				strncpy(line, p1, len);
-				DPRINTF("send line: '%s'\n", line);
-				p1 = p+1;
-				do {
-					readResponse();
-					if (millis() > callSend + NODE_TIMEOUT) {
-						DPRINTF("sendCmd runs into TIMEOUT\n");
-						callState = TIMEOUT;
-						return;
-					}
-				} while (readState != READING_PROMPT_SPC);
-				readState = READING_UNKNOWN;
-			}
-			p++;
-		}
+		sendCmdLine();
 	} else {
 		this->correlation = 0;
 	}
@@ -242,7 +277,7 @@ bool NodeMcu::readResponse() {
 		}
 		break;
 	case READING_RESULT_END:
-		if( callState == PENDING ) callState = RESULT_RECEIVED;
+		if( callState == PENDING || callState == SENDING ) setCallState(RESULT_RECEIVED);
 		if (ch == '\n' || ch == '\r') {
 			readState = READING_LF;
 		} else {
@@ -258,8 +293,14 @@ bool NodeMcu::readResponse() {
 
 void NodeMcu::update(uint32_t now) {
 
+	if( callState == SENDING ) {
+		sendCmdLine();
+		return;
+	}
+
 	if( !ntpObjectSet && nodeMcuDetected && callState == IDLE ) {
 		sendCmd(ntp,0);
+		// send not completed here
 		ntpObjectSet = true;
 	}
 
@@ -287,13 +328,13 @@ void NodeMcu::update(uint32_t now) {
 	if (callState == PENDING) {
 		while (readResponse()) {
 			if (callState == PENDING && readState == READING_RESULT_END) {
-				callState = RESULT_RECEIVED;
+				setCallState(RESULT_RECEIVED);
 			}
 		}
 		if( now > callSend + 20000 ) {
-			callState = TIMEOUT;
+			setCallState(TIMEOUT);
 			timeoutOccured = now;
-			DPRINTF("async timeout occured.\n");
+			DPRINTF2("async timeout occured.\n");
 		}
 	}
 
@@ -301,8 +342,8 @@ void NodeMcu::update(uint32_t now) {
 		while (readResponse())
 			;
 		if( now > timeoutOccured + 120000 ) {
-			DPRINTF("recover from timeout -> IDLE\n");
-			callState = IDLE;
+			DPRINTF2("recover from timeout -> IDLE\n");
+			setCallState(IDLE);
 		}
 	}
 
@@ -311,7 +352,7 @@ void NodeMcu::update(uint32_t now) {
 			nodeMcuDetected = true;
 			DPRINTF("node detected. version: %s\r\n",lastResult->line);
 		}
-		callState = IDLE;
+		setCallState(IDLE);
 		return;
 	}
 
@@ -320,7 +361,7 @@ void NodeMcu::update(uint32_t now) {
 		uint32_t utc;
 		sscanf(lastResult->line, "%uld",&utc);
 		callback->setUtcTime(utc);
-		callState = IDLE;
+		setCallState(IDLE);
 	}
 }
 
@@ -328,8 +369,16 @@ void NodeMcu::requestNtpSync(uint32_t when) {
 	nextNtpSync = when;
 }
 
+const char* CALLSTATES[] = { "IDLE", "SENDING", "PENDING", "RESULT_RECEIVED", "TIMEOUT" };
+
+void NodeMcu::setCallState(CallState callState) {
+	DPRINTF("callState: %s -> %s\n", CALLSTATES[this->callState],
+			CALLSTATES[callState]);
+	this->callState = callState;
+}
+
 void NodeMcu::clearResult() {
-	DPRINTF("clearResult\n");
+	DPRINTF2("clearResult\n");
 	Result* p = lastResult;
 	while (p != NULL) {
 		Result* current = p;

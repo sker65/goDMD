@@ -535,9 +535,10 @@ extern volatile irparams_t irparams;
 // For AVR: Prescale /8 (16M/8 = 0.5 microseconds per tick)
 // Therefore, the timer interval can range from 0.5 to 128 microseconds
 // depending on the reset value (255 to 0)
+//SYSTEMConfigPerformance(SYSCLK);
+
 #define TIMER_CONFIG_NORMAL() ({ \
-	SYSTEMConfigPerformance(SYSCLK); \
-	OpenTimer2( T2_ON | T2_SOURCE_INT | T2_PS_1_8, 375); \
+	OpenTimer2( T2_ON | T2_SOURCE_INT | T2_PS_1_8, 750); \
 }) 
 
 // reset timer count to get the fitting recording interval

@@ -307,7 +307,7 @@ void Menu::saveOption() {
 		DPRINTF("Setting option[%d]=%d\n",actMenu,actOption);
 		if( actMenu >= SET_TIME_HOURS && actMenu <= SET_DATE_DAY) {
 			clockDirty = true; // force rtc adjust
-			DPRINTF("and force RTC sync\n");
+			DPRINTF2("and force RTC sync\n");
 		}
 	}
 	option[actMenu] = actOption;
@@ -439,7 +439,7 @@ void Menu::buttonReleased(uint8_t n, uint8_t longClick) {
 		redrawNeeded = true;
 		if( n==BUTTON_MENU && longClick==2 ) {
 			saveOption();
-			DPRINTF("leave menu\n");
+			DPRINTF2("leave menu\n");
 			leaveMenu();
 		}
 		if( n==BUTTON_MENU && longClick==1 ) {
@@ -531,7 +531,7 @@ void Menu::leaveMenu() {
 	if( clockDirty ) {
 		//uint16_t year, uint8_t month, uint8_t day,
 		// uint8_t hour =0, uint8_t min =0, uint8_t sec =0
-		DPRINTF("setting rtc.\n");
+		DPRINTF2("setting rtc.\n");
 		DateTime dt(
 				option[SET_DATE_YEAR]+2015,
 				option[SET_DATE_MON]+1,

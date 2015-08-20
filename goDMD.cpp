@@ -199,7 +199,7 @@ void selftest() {
 
 void setup() {
 	Serial.begin(9600);
-#ifdef _DxEBUG
+#ifdef _DXEBUG
 	for( int i =0; i<5;i++) {
 		DPRINTF("wait %lu \n", millis());
 		delay(1000);
@@ -249,6 +249,9 @@ void setup() {
 		panel.println("init anis fail");
 		panel.println("*.ani not found");
 	}
+
+	uint32_t pclock = getPeripheralClock();
+	DPRINTF("system running with periphal clock : %ld\n",pclock);
 
 	sensor.begin();
 	DPRINTF("sensors found: %d\n",sensor.getDeviceCount());
@@ -319,6 +322,8 @@ void loop() {
 	menu.loadOptions();
 	reloadConfig();
 
+	DPRINTF("free ram %d\n", getFreeRam());
+
 	uint32_t ledInterval = 3000;
 
 	long switchToAni = now + clockShowTime;
@@ -347,10 +352,35 @@ void loop() {
 		}
 	}*/
 
+	node.start();
+
+/*	int t = 0;
+	while(t++ < 20) {
+		long now = millis();
+		node.update(now);
+		delay(100);
+	}
+	DPRINTF("ip: %s\n",node.getIp());
+	while(t++ < 20) {
+		long now = millis();
+		node.update(now);
+		delay(100);
+	}
+	Result* r = node.getApList();
+	while( r != NULL ) {
+		DPRINTF("AP: %s\n", r->line);
+		r = r->next;
+	}*/
+	bool hasNtpRequested = false;
+
 	while(true) {
 		long now = millis();
 
 		node.update(now);
+		if( now > 20000 && node.isNodeMcuDetected() && hasNtpRequested==false ) {
+			hasNtpRequested = true;
+			node.requestNtpSync(now);
+		}
 
 		if( Serial.available() ) {
 			String ps = Serial.readStringUntil('\n');
@@ -408,6 +438,7 @@ void loop() {
 		case showTime:
 			clock.on();
 			if( SAVECMP( now , switchToAni) ) {
+				DPRINTF("free ram %d\n", getFreeRam());
 				if(pir.somebodyHere()) {
 					state = showAni;
 					clock.off();

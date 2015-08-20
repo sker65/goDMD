@@ -71,7 +71,7 @@ public:
 
 	virtual ~Menu();
 
-	void update(long now);
+	void update(uint32_t now);
 
 	bool isActive() {return active; }
 
@@ -88,11 +88,11 @@ public:
 	uint8_t getOption(int index) {return option[index];}
 
 	void buttonReleased(uint8_t no, uint8_t longPress);
-	void doNetConfig(uint8_t n, uint8_t longClick);
+	bool doNetConfig(uint32_t event);
 
 	enum NetMenu { IP, LISTAP, PASSWD };
 
-	void notifyEvent(unsigned long event);
+	void notifyEvent(uint32_t event);
 	int lookupCode(unsigned long code);
 
 private:
@@ -102,11 +102,17 @@ private:
 	SDClass* sd;
 	NodeMcu* node;
 
-	char netOption[18];
-	char netValue[18];
+	char netOption[128];
+	char netValue[128];
+	char netOptionDisplay[16];
+	char netValueDisplay[16];
+	uint32_t nextWobble;
+	bool wobbleForward;
+	bool passCharBlink;
+	int wobbleOffset;
 	NetMenu netMenu;
 	bool aplistRead;
-	char actualSsid[24];
+	char actualSsid[128];
 	char netPasswd[64];
 	char* pActPasswdChar;
 	char passChar;

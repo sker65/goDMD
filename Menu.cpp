@@ -105,6 +105,8 @@ Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd, NodeMcu* node ) :
 	redrawNeeded=false;
 	actMenu=0;
 	actOption=0;
+	wobbleForward = true;
+	wobbleOffset = 0;
 
 	// fill index
 
@@ -132,16 +134,74 @@ Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd, NodeMcu* node ) :
 	clockDirty = false;
 	netMenu = IP;
 	pActPasswdChar = netPasswd;
+	*pActPasswdChar = 0;
 	passChar = 'A';
 }
 
 Menu::~Menu() {
 }
 
-void Menu::update(long now) {
+void Menu::update(uint32_t now) {
 
 	menuButton.update(now);
 //	selButton.update(now);
+	if( netConfig ) {
+		// copy correct display values
+		memset(netOptionDisplay,32,16);
+		const char* pSrc = netOption;
+		char* pDst = netOptionDisplay;
+		int i = 0;
+		while(*pSrc!=0 && i++<16) *pDst++ = *pSrc++;
+
+		memset(netValueDisplay,32,16);
+		pSrc = netValue+wobbleOffset;
+		pDst = netValueDisplay;
+		i = 0;
+		while(*pSrc!=0 && i++<16) *pDst++ = *pSrc++;
+		int l = 0;
+		char* p;
+		if( now > nextWobble ) {
+			redrawNeeded = true;
+			// scroll for and back AP Name
+			switch( netMenu) {
+			case LISTAP:
+				nextWobble = now + 1000;
+				if( wobbleForward ) {
+					if( wobbleOffset < (int)strlen(netValue)-16  ) {
+						wobbleOffset += 1;
+					} else {
+						wobbleForward = false;
+					}
+				} else {
+					if( wobbleOffset > 0 ) {
+						wobbleOffset -= 1;
+					} else {
+						wobbleForward = true;
+					}
+				}
+				break;
+			case PASSWD:
+				nextWobble = now + 500;
+				l = strlen(netValue);
+				// add blink cursor and star out display (all but last)
+				p = netValueDisplay;
+				if( passCharBlink ) {
+					passCharBlink = false;
+					*(p+( l>15?15:l ) ) = passChar;
+				} else {
+					passCharBlink = true;
+					*(p+( l>15?15:l ) ) = '_';
+				}
+				if( strlen( netValue ) > 15) {
+					wobbleOffset = l-15;
+				}
+				break;
+			case IP:
+				break;
+			}
+		} // now
+
+	}
 
 	if( active && redrawNeeded ) {
 		redrawMenu();
@@ -179,12 +239,16 @@ int Menu::lookupCode(unsigned long code) {
 /**
  * IR Decoder notifies events here
  */
-void Menu::notifyEvent(unsigned long code) {
-	int event = lookupCode(code);
-	DPRINTF("Menu notify: 0x%06lx\n", event );
+void Menu::notifyEvent(uint32_t code) {
+	uint32_t event = lookupCode(code);
+	DPRINTF("Menu notify: 0x%06lx\n", code );
 	if( option[LED_INDICATOR] == 0) {
 		panel->setPixel(0,0,2); // light pixel
 	}
+	if( netConfig ) {
+		if( doNetConfig(code) ) return;
+	}
+
 	uint8_t newFont;
 	switch( event ) {
 		case BRIGHTNESS_DOWN:
@@ -231,7 +295,6 @@ void Menu::notifyEvent(unsigned long code) {
 		case SEL_BUT:
 			this->buttonReleased(BUTTON_MENU, 1);
 			break;
-			
 	}
 }
 
@@ -284,13 +347,40 @@ void Menu::loadOptions() {
 }
 
 
-void Menu::doNetConfig(uint8_t n, uint8_t longClick) {
+bool Menu::doNetConfig(uint32_t but) {
+	DPRINTF("netMenu: %d, event: %ld\n", netMenu, but);
+
+	if( but == BUT_EQ ) {
+		netConfig = false;
+		return false;
+	} else if( but == BUT_PLUS ) {
+		wobbleOffset = 0;
+		switch(netMenu) {
+		case IP:
+			netMenu = LISTAP;
+			strcpy(netOption,"Scanning WIFI");
+			redrawNeeded = true;
+			update(millis());
+			aplistRead = false;
+			break;
+		case LISTAP:
+			netMenu = PASSWD;
+			break;
+		case PASSWD:
+			node->configAp(actualSsid, netPasswd);
+			node->requestNtpSync(millis()+60000);
+			netMenu = IP;
+			break;
+		}
+	}
+
 	char* ip;
 	switch(netMenu) {
 	case IP:
 		ip = node->getIp();
-		strncpy(netOption,"IP-Addr.",17);
-		strncpy(netValue,ip,17);
+		strcpy(netOption,"IP-Addr.");
+		strcpy(netValue,ip);
+		redrawNeeded = true;
 		break;
 
 	case LISTAP:
@@ -299,43 +389,42 @@ void Menu::doNetConfig(uint8_t n, uint8_t longClick) {
 			aplistRead = true;
 		}
 		// keep actual ap name pointer / name
-		strncpy(netOption,"SSID",17);
+		redrawNeeded = true;
+		strcpy(netOption,"SSID");
+
+		if( but == BUT_MINUS ) {
+			wobbleOffset = 0;
+			if( actAp != NULL ) actAp = actAp->next;
+			if( actAp == NULL )	actAp = apList;
+			DPRINTF("switch to next ssid: %s\n", actualSsid);
+		}
 		if( actAp != NULL && actAp->line != NULL) {
-			strncpy(actualSsid, actAp->line,17);
+			strcpy(actualSsid, actAp->line);
+			DPRINTF("actual ssid: %s\n", actualSsid);
 		}
-		strncpy(netValue,actualSsid,17);
-		if( n == BUT_PLUS ) {
-			if( actAp != NULL && actAp->next != NULL ) {
-				actAp = actAp->next;
-			} else {
-				actAp = apList;
-			}
-		}
+		strcpy(netValue,actualSsid);
 		break;
 
 	case PASSWD:
-		strncpy(netOption,"Password",17);
-		strncpy(netValue,netPasswd,17);
-		if( n == BUT_2 ) {
+		strcpy(netOption,"Password");
+		if( but == BUT_2 ) {
 			if( passChar++ == 128 ) passChar = 32;
-		}
-		if( n == BUT_8 ) {
+		} else if( but == BUT_8 ) {
 			if( passChar-- == 31 ) passChar = 127;
-		}
-		if( n == BUT_6 ) {
+		} else if( but == BUT_6 && strlen(netPasswd) < 64 ) {
 			*pActPasswdChar++ = passChar;
-		}
-		if( n == BUT_4 ) {
+			passCharBlink = true;
+			*pActPasswdChar = 0;
+		} else if( but == BUT_4 ) {
 			*pActPasswdChar = 0;
 			if( pActPasswdChar > netPasswd ) pActPasswdChar--;
 		}
-		if( n == BUT_PLUS) {
-			node->configAp(actualSsid, netPasswd);
-			netMenu = IP;
-		}
+		DPRINTF("act pass: %s\n", netPasswd);
+		strcpy(netValue, netPasswd);
+		redrawNeeded = true;
 		break;
 	}
-
+	return true;
 }
 
 /**
@@ -347,14 +436,6 @@ void Menu::doNetConfig(uint8_t n, uint8_t longClick) {
 void Menu::buttonReleased(uint8_t n, uint8_t longClick) {
 	DPRINTF("button %d %d \n", n, longClick);
 	if( active ) {
-		if( netConfig ) {
-			if( n==BUTTON_MENU && longClick==1 ) {
-				netConfig = false;
-			} else {
-				doNetConfig(n,longClick);
-				return;
-			}
-		}
 		redrawNeeded = true;
 		if( n==BUTTON_MENU && longClick==2 ) {
 			saveOption();
@@ -379,7 +460,8 @@ void Menu::buttonReleased(uint8_t n, uint8_t longClick) {
 			DPRINTF("trimmed actOption: %d\n", actOption);
 			if( actMenu == MENU_NET_CONFIG && node->isNodeMcuDetected() ) {
 				netConfig=true;
-				redrawNeeded = true;
+				netMenu  = IP;
+				doNetConfig(0); // just start
 			}
 		}
 		if( n==BUTTON_MENU && longClick==0 ) {
@@ -404,6 +486,11 @@ void Menu::enterMenu() {
 	active=true;
 	// load active option from next menu
 	actOption = option[actMenu];
+	if( actMenu == MENU_NET_CONFIG && node->isNodeMcuDetected() ) {
+		netConfig=true;
+		netMenu = IP;
+		doNetConfig(0); // just start
+	}
 }
 
 /**
@@ -417,8 +504,8 @@ void Menu::redrawMenu() {
 	if( active ) {
 		panel->writeText("Config Menu",0,0,16);
 		if( netConfig ) {
-			panel->writeText(netOption,0,8,16);
-			panel->writeText(netValue,0,16,16);
+			panel->writeText(netOptionDisplay,0,8,16);
+			panel->writeText(netValueDisplay,0,16,16);
 		} else {
 			panel->writeText(mmText[i],0,8,16);
 			panel->writeText(op,0,16,16);

@@ -31,6 +31,7 @@ public:
 	NodeMcu(NtpCallback* callback);
 	virtual ~NodeMcu();
 	void begin();
+	void start();
 
 	Result* getApList();
 
@@ -58,6 +59,8 @@ public:
 
 	void update(uint32_t now);
 
+	void requestNtpSync(uint32_t when);
+
 //private:
 	void checkNodeInfo();
 	bool nodeMcuDetected;
@@ -69,16 +72,22 @@ private:
 	void clearResult();
 	Result* lastResult;
 	uint32_t lasttimeChecked;
+	uint32_t nextUpdate;
+	uint32_t nextNtpSync;
 	int lastCh;
 	ReadState readState;
 	CallState callState;
 	int correlation;
+
 	uint32_t callSend;
+	uint32_t timeoutOccured;
+
 	bool ntpObjectSet;
 	NtpCallback* callback;
+	bool serialDeviceDetected;
 };
 
-#define NODE_TIMEOUT 15000
+#define NODE_TIMEOUT 5000
 
 // correlations for async calls
 #define NODE_INFO 1

@@ -63,10 +63,10 @@ boolean Animation::readNextAnimation() {
 	while(true) {
 		actFilePos = ani.position();
 		aniIndex[actAnimation] = actFilePos;
-		DPRINTF("name: ");
+		DPRINTF2("name: ");
 		strcpy(aniname, (const char*)readString(ani,buf,40)); // read & copy name
 		if( version > 1 ) {
-			DPRINTF("transition: ");
+			DPRINTF2("transition: ");
 			readString(ani,buf,40); // read transition name
 		}
 		// cycles 2

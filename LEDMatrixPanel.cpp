@@ -159,7 +159,7 @@ void LEDMatrixPanel::begin() {
 
     for (int i = 0; i < nBuffers*(useDoubleBuffering?2:1); i++) {
 		buffptr[i] = (volatile uint8_t*) malloc(buffersize);
-		DPRINTF("buffer %d at 0x%08x",i,(unsigned int)buffptr[i]);
+		DPRINT("buffer %d at 0x%08x",i,(unsigned int)buffptr[i]);
 		// delete buffer
 		memset((void*)buffptr[i], 0x00, buffersize);
 	}

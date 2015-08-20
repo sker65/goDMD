@@ -48,7 +48,7 @@ char* readString(File& f, char* buf, int buflen) {
 		else f.read();
 	}
 	buf[len<buflen?len:buflen] = '\0';
-	DPRINTF("%s\n",buf);
+	DPRINT("%s\n",buf);
 	return buf;
 }
 

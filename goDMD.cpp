@@ -205,11 +205,12 @@ void setup() {
 		delay(1000);
 	}
 #endif
-	DPRINTF("calling panel begin\n");
+	DPRINTF2("calling panel begin\n");
 	panel.begin();
 
 	panel.setAnimationColor(1);
 	panel.setTimeColor(1);
+	DPRINTF2("\n");
 
 	node.begin();
 
@@ -218,23 +219,23 @@ void setup() {
 
 	panel.println(VERSION);
 
-	DPRINTF("calling wire begin\n");
+	DPRINTF2("calling wire begin\n");
 	panel.println("start wire ..");
 	Wire.begin();
-	DPRINTF("calling rtc begin\n");
+	DPRINTF2("calling rtc begin\n");
 	panel.println("start rtc ..");
 	rtc.begin();
 	
 	pinMode(INTERNAL_SD_SELECT, OUTPUT);
-	DPRINTF("calling sd card begin\n");
+	DPRINTF2("calling sd card begin\n");
 	panel.println("start sd card ..");
 
 	if( !SD.begin(INTERNAL_SD_SELECT) ){
-		DPRINTF("sd card begin failed\n");
+		DPRINTF2("sd card begin failed\n");
 		panel.println("sd card failed");
 		selftest();
 	} else {
-		DPRINTF("sd card begin success\n");
+		DPRINTF2("sd card begin success\n");
 		delay(500);
 		panel.println("boot ok!");
 		panel.println("(c)2015 by Steve");

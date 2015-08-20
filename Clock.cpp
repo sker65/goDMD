@@ -123,6 +123,7 @@ void Clock::setMode( Mode newMode ) {
 }
 
 void Clock::adjust(DateTime* dt) {
+	DPRINTF("adjust clock: %d:%d:%d\n", dt->hour(), dt->minute(), dt->second());
 	rtc->adjust(*dt);
 	nextRtcSync = millis(); // force sync
 }

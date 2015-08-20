@@ -52,6 +52,7 @@ public:
 
 	enum CallState {
 		IDLE, 		// idle, call can be placed
+		SENDING,
 		PENDING, 	// call is pending, result outstanding
 		RESULT_RECEIVED, // result has received, but not yet processed
 		TIMEOUT		// call timeout response was too late
@@ -63,12 +64,16 @@ public:
 
 //private:
 	void checkNodeInfo();
+
+	void setCallState(CallState callState);
+
 	bool nodeMcuDetected;
 
 private:
 	char lineBuffer[64];
 	char* pLine;
 	void sendCmd(const char* cmd, int correlation);
+	void sendCmdLine();
 	void clearResult();
 	Result* lastResult;
 	uint32_t lasttimeChecked;
@@ -85,6 +90,11 @@ private:
 	bool ntpObjectSet;
 	NtpCallback* callback;
 	bool serialDeviceDetected;
+
+	const char* pSendCmd;
+	const char* p1SendCmd;
+    char* cmdBuffer;
+
 };
 
 #define NODE_TIMEOUT 5000

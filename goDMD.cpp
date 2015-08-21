@@ -167,7 +167,30 @@ void selftest() {
 		if( digitalRead(PIN_BTN1)==HIGH ) seenHigh = true;
 		if( seenHigh && digitalRead(PIN_BTN1)==LOW ) run=false;
 	}
+	run = true;
+	seenHigh = false;
+	panel.clear();
+	node.start();
+	while(run) {
+		long now = millis();
+		node.update(now);
+		if( update < now ) {
+			update = now+1000;
+			if( node.isNodeMcuDetected()) {
+				panel.writeText("wifi ext active",0,0,15);
+				char* ip = node.getIp();
+				char buf[16];
+				sprintf(buf, "%-16s",ip);
+				panel.writeText(buf,0,8,16);
+			} else {
+				panel.writeText("no wifi ext.",0,0,12);
+			}
 
+
+		}
+		if( digitalRead(PIN_BTN1)==HIGH ) seenHigh = true;
+		if( seenHigh && digitalRead(PIN_BTN1)==LOW ) run=false;
+	}
 	panel.println("press but to cont");
 	while( true ){
 		panel.setAnimationColor(col);

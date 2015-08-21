@@ -132,18 +132,22 @@ const char* getIpCmd =
 		"ip = wifi.sta.getip() print() print(\"# \"..(ip and ip or \"nil\")) print(\"##\")\r\n";
 
 char* NodeMcu::getIp() {
-	sendCmd(getIpCmd, GET_IP);
-	while ( true ) {
-		update(millis());
-		//delay(300);
-		DPRINTF2("wait for result\n");
-		if (callState == RESULT_RECEIVED && correlation == GET_IP)
-			break;
-		if( callState == TIMEOUT) return "error";
+	if( callState == IDLE ) {
+		sendCmd(getIpCmd, GET_IP);
+		while ( true ) {
+			update(millis());
+			//delay(300);
+			DPRINTF2("wait for result\n");
+			if (callState == RESULT_RECEIVED && correlation == GET_IP)
+				break;
+			if( callState == TIMEOUT) return "error";
+		}
+		setCallState(IDLE);
+		DPRINTF("getIp result: %s\n", lastResult->line );
+		return lastResult->line;
+	} else {
+		return "---";
 	}
-	setCallState(IDLE);
-	DPRINTF("getIp result: %s\n", lastResult->line );
-	return lastResult->line;
 }
 
 const char* getUtcFromNtpCmd = "ntp:sync(function(t) print() print( \"# \"..t.ustamp ) print \"##\" end)\r\n";
@@ -308,7 +312,7 @@ void NodeMcu::update(uint32_t now) {
 
 	nextUpdate = now + 400;
 
-	if( callState != IDLE ) DPRINTF("node::update: readState: %d, callState: %d\n", readState, callState);
+	if( callState != IDLE ) DPRINTF("readState: %d, callState: %d\n", readState, callState);
 
 	if (!nodeMcuDetected) {
 		if (now > lasttimeChecked && callState == IDLE) {

@@ -141,6 +141,15 @@ void selftest() {
 	panel.clear();
 	while(run) {
 		long now = millis();
+		// just hand over
+		if( Serial.available() ) {
+			int in = Serial.read();
+			Serial1.write(in);
+		}
+		if( Serial1.available()) {
+			int out = Serial1.read();
+			Serial.write(out);
+		}
 		if( update < now ) {
 			update = now+1000;
 			if( pir.actual() ) panel.writeText("PIR: true   ",0,0,12);
@@ -249,11 +258,11 @@ void setup() {
 	panel.println("start rtc ..");
 	rtc.begin();
 	
-	pinMode(INTERNAL_SD_SELECT, OUTPUT);
 	DPRINTF2("calling sd card begin\n");
 	panel.println("start sd card ..");
 
 	if( !SD.begin(INTERNAL_SD_SELECT) ){
+	pinMode(INTERNAL_SD_SELECT, OUTPUT);
 		DPRINTF2("sd card begin failed\n");
 		panel.println("sd card failed");
 		selftest();

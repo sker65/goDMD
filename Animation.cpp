@@ -58,6 +58,7 @@ boolean Animation::readNextAnimation() {
 	seenMaskFrame = false;
 	if( randomOrder && seenAllAnimations ) {
 		actAnimation = random(numberOfAnimations);
+		DPRINTF("choosing random: %d\n",actAnimation);
 		ani.seek(aniIndex[actAnimation]);
 	}
 	while(true) {

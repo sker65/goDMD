@@ -21,6 +21,8 @@ public:
 	boolean begin();
 	void setFskMode(int mode);
 
+	void resetAnimations();
+
 	void setRandomOrder(boolean randomOrder) {
 		this->randomOrder = randomOrder;
 	}

@@ -112,9 +112,7 @@ boolean Animation::readNextAnimation() {
 
 		skipAllFrames(ani);
 		if( actAnimation >= numberOfAnimations ) {
-			ani.seek(8); // reset
-			actAnimation = 0;
-			seenAllAnimations = true;
+			resetAnimations();
 		}
 		if( c++ >= numberOfAnimations){
 			DPRINTF("skipping loop exceeded number of animations: %d\n",numberOfAnimations);
@@ -230,8 +228,7 @@ boolean Animation::update(long now) {
 		}
 		if( actFrame==0 ) {
 			if( actAnimation >= numberOfAnimations ) {
-				ani.seek(8); // reset
-				actAnimation = 0;
+				resetAnimations();
 			}
 			if( !readNextAnimation() ) {
 				// there was an error
@@ -290,4 +287,11 @@ void Animation::setFskMode(int mode) {
 	uint8_t fsk[] = {18,16,12,6};
 	this->fskFilter = fsk[mode];
 	DPRINTF("setting fsk to %d\n",fskFilter);
+}
+
+void Animation::resetAnimations() {
+	ani.seek(8); // reset
+	actAnimation = 0;
+	seenAllAnimations = true;
+	DPRINTF2("reset animations, seen all -> true\n");
 }

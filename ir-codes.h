@@ -14,7 +14,7 @@
 #if 1
 #define BUT_CH_MINUS 	0xe318261b
 #define BUT_CH 			0x00511dbb
-#define BUT_CH_PLUS 	0xee885d7f
+#define BUT_CH_PLUS 	0xee886d7f
 #define BUT_PREV 		0x52a3d41f
 #define BUT_NEXT 		0xd7e84b1b
 #define BUT_PLAY 		0x20fe4dbb

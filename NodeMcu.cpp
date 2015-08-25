@@ -13,7 +13,7 @@
 #include "WProgram.h"
 #include "debug.h"
 
-NodeMcu::NodeMcu(NtpCallback* callback) {
+NodeMcu::NodeMcu(NtpCallback* callback, NodeNotifyCallback* notifyCallback) {
 	lasttimeChecked = 0L;
 	nodeMcuDetected = false;
 	lastResult = NULL;
@@ -29,6 +29,10 @@ NodeMcu::NodeMcu(NtpCallback* callback) {
 	nextNtpSync = 1<<31;
 	nextUpdate = 0;
 	cmdBuffer = NULL;
+	ip[0]='\0';
+	this->notifyCallback = notifyCallback;
+	lastStatusCheck = millis() + 15000;
+	enableBackgroundCmds = true;
 }
 
 NodeMcu::~NodeMcu() {
@@ -52,7 +56,6 @@ void NodeMcu::start() {
 		//sendCmd("node.restart()\r\n", false);
 
 		sendCmd("uart.setup( 0,9600,8,0,1,0 )\r\n", 0);
-		//sendCmd("uart.setup( 0,115200,8,0,1,0 )\r\n", false);
 		//Serial1.begin(115200);
 	} else {
 		DPRINTF2("NO serial device detected.\n");
@@ -109,16 +112,19 @@ const char* ntp =
 const char* getApListCmd =
 		"wifi.sta.getap(function(t) print() for k,v in pairs(t) do print(\"# \"..k) end print(\"##\") end)\r\n";
 
-Result* NodeMcu::getApList() {
-	sendCmd(setModeStation, 0);
-	sendCmd(getApListCmd, LIST_AP);
+void NodeMcu::waitFor(int corr) {
 	while ( true) {
 		update(millis());
-		if (callState == RESULT_RECEIVED && correlation == LIST_AP){
+		if (callState == IDLE && this->correlation == corr){
 			break;
 		}
 	}
-	setCallState(IDLE);
+}
+
+Result* NodeMcu::getApList() {
+	sendCmd(setModeStation, 0);
+	sendCmd(getApListCmd, LIST_AP);
+	waitFor(LIST_AP);
 	return lastResult;
 }
 
@@ -131,23 +137,22 @@ void NodeMcu::configAp(const char* ssid, const char* password) {
 const char* getIpCmd =
 		"ip = wifi.sta.getip() print() print(\"# \"..(ip and ip or \"nil\")) print(\"##\")\r\n";
 
-char* NodeMcu::getIp() {
-	if( callState == IDLE ) {
-		sendCmd(getIpCmd, GET_IP);
-		while ( true ) {
-			update(millis());
-			//delay(300);
-			DPRINTF2("wait for result\n");
-			if (callState == RESULT_RECEIVED && correlation == GET_IP)
-				break;
-			if( callState == TIMEOUT) return "error";
-		}
-		setCallState(IDLE);
-		DPRINTF("getIp result: %s\n", lastResult->line );
-		return lastResult->line;
-	} else {
-		return "---";
-	}
+const char* getStatusCmd =
+		"status = wifi.sta.status() print() print(\"# \"..status) print(\"##\")\r\n";
+
+void NodeMcu::requestStatus() {
+	sendCmd(getStatusCmd, GET_STATUS);
+}
+
+void NodeMcu::requestIp() {
+	sendCmd(getIpCmd, GET_IP);
+}
+
+
+char* NodeMcu::syncRequestIp() {
+	requestIp();
+	waitFor(GET_IP);
+	return ip;
 }
 
 const char* getUtcFromNtpCmd = "ntp:sync(function(t) print() print( \"# \"..t.ustamp ) print \"##\" end)\r\n";
@@ -297,20 +302,42 @@ bool NodeMcu::readResponse() {
 
 void NodeMcu::update(uint32_t now) {
 
+	// complete sending a multi line commmand
 	if( callState == SENDING ) {
 		sendCmdLine();
 		return;
 	}
 
-	if( !ntpObjectSet && nodeMcuDetected && callState == IDLE ) {
-		sendCmd(ntp,0);
-		// send not completed here
-		ntpObjectSet = true;
-	}
-
 	if( now < nextUpdate ) return;
 
 	nextUpdate = now + 400;
+
+	if( isEnableBackgroundCmds() ) {
+		if( !ntpObjectSet && nodeMcuDetected && callState == IDLE ) {
+			sendCmd(ntp,0);
+			// send not completed here
+			ntpObjectSet = true;
+		}
+
+		if( callState == IDLE && nodeMcuDetected && now > lastStatusCheck ) {
+			requestStatus();
+			lastStatusCheck = now + 60000;
+		}
+
+		if( callState == IDLE && nodeMcuDetected && now > lastHeapCheck ) {
+			requestHeap();
+			lastHeapCheck = now + 120000;
+		}
+
+		if( callState == IDLE && nodeMcuDetected && status == 5 && strlen(ip)==0 ) {
+			requestIp();
+		}
+
+		if( ntpObjectSet && now > nextNtpSync && callState == IDLE && status == 5 ) {
+			nextNtpSync = now + 3600*1000*24; // one day
+			sendCmd(getUtcFromNtpCmd,NTP_SYNC);
+		}
+	}
 
 	if( callState != IDLE ) DPRINTF("readState: %d, callState: %d\n", readState, callState);
 
@@ -322,11 +349,6 @@ void NodeMcu::update(uint32_t now) {
 					"print() print(\"# \"..minorVer..devVer) print(\"##\")\r\n",
 					NODE_INFO);
 		}
-	}
-
-	if( ntpObjectSet && now > nextNtpSync && callState == IDLE ) {
-		nextNtpSync = now + 3600*1000*24; // one day
-		sendCmd(getUtcFromNtpCmd,NTP_SYNC);
 	}
 
 	if (callState == PENDING) {
@@ -351,21 +373,41 @@ void NodeMcu::update(uint32_t now) {
 		}
 	}
 
-	if (callState == RESULT_RECEIVED && correlation == NODE_INFO) {
-		if (strncmp(lastResult->line, "96", 2) == 0) {
-			nodeMcuDetected = true;
-			DPRINTF("node detected. version: %s\r\n",lastResult->line);
+	if (callState == RESULT_RECEIVED ) {
+		uint8_t newStatus = 0;
+		switch( correlation ) {
+		case NODE_INFO:
+			if (strncmp(lastResult->line, "96", 2) == 0) {
+				nodeMcuDetected = true;
+				DPRINTF("node detected. version: %s\r\n",lastResult->line);
+			}
+			if( notifyCallback ) notifyCallback->notify(this, correlation);
+			break;
+		case NTP_SYNC:
+			DPRINTF("utc timestamp received: %s\r\n", lastResult->line);
+			uint32_t utc;
+			sscanf(lastResult->line, "%lu",&utc);
+			callback->setUtcTime(utc);
+			break;
+		case GET_IP:
+			DPRINTF("getip received: %s\n", lastResult->line);
+			strncpy(ip,lastResult->line,16);
+			if( notifyCallback ) notifyCallback->notify(this, correlation);
+			break;
+		case GET_STATUS:
+			sscanf(lastResult->line, "%hhu",&newStatus);
+			if( newStatus != status ) {
+				status = newStatus;
+				if( notifyCallback ) notifyCallback->notify(this, correlation);
+			}
+			DPRINTF("received status: %d\n",status);
+			break;
+		case GET_HEAP:
+			DPRINTF("node heap: %s\n", lastResult->line);
+			break;
 		}
 		setCallState(IDLE);
 		return;
-	}
-
-	if (callState == RESULT_RECEIVED && correlation == NTP_SYNC) {
-		DPRINTF("utc timestamp received: %s\r\n", lastResult->line);
-		uint32_t utc;
-		sscanf(lastResult->line, "%uld",&utc);
-		callback->setUtcTime(utc);
-		setCallState(IDLE);
 	}
 }
 
@@ -381,6 +423,13 @@ void NodeMcu::setCallState(CallState callState) {
 	this->callState = callState;
 }
 
+const char* getHeapCmd =
+		"heap = node.heap() print() print(\"# \"..heap) print(\"##\")\r\n";
+
+void NodeMcu::requestHeap() {
+	sendCmd(getHeapCmd, GET_HEAP);
+}
+
 void NodeMcu::clearResult() {
 	DPRINTF2("clearResult\n");
 	Result* p = lastResult;
@@ -394,10 +443,3 @@ void NodeMcu::clearResult() {
 	lastResult = NULL;
 }
 
-// das muss immer gerufen werden können und darf nicht blockieren
-// genauso wie das sync per ntp
-// es muss im hintergrund passieren
-
-void NodeMcu::checkNodeInfo() {
-// unused
-}

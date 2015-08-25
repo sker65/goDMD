@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+class NodeMcu;
+
 class Result {
 public:
 	char* line;
@@ -22,13 +24,19 @@ public:
 	virtual void setUtcTime(uint32_t utcTime) = 0;
 };
 
+class NodeNotifyCallback {
+public:
+	virtual ~NodeNotifyCallback(){};
+	virtual void notify(NodeMcu* node, int type) = 0;
+};
+
 class NodeMcu {
 public:
 	bool isNodeMcuDetected() const {
 		return nodeMcuDetected;
 	}
 
-	NodeMcu(NtpCallback* callback);
+	NodeMcu(NtpCallback* callback, NodeNotifyCallback* notifyCallback);
 	virtual ~NodeMcu();
 	void begin();
 	void start();
@@ -37,11 +45,16 @@ public:
 
 	void configAp(const char* name, const char* password);
 
-	char* getIp();
+	void requestIp();
+	char* syncRequestIp();
+
+	void requestStatus();
+	void requestHeap();
 
 	long getUtcFromNtp();
 
 	bool readResponse();
+	void waitFor(int correlation);
 
 	enum ReadState {
 		READING_UNKNOWN, READING_LF,
@@ -63,9 +76,24 @@ public:
 	void requestNtpSync(uint32_t when);
 
 //private:
-	void checkNodeInfo();
 
 	void setCallState(CallState callState);
+
+	uint8_t getStatus() const {
+		return status;
+	}
+
+	const char* getIp() const {
+		return ip;
+	}
+
+	bool isEnableBackgroundCmds() const {
+		return enableBackgroundCmds;
+	}
+
+	void setEnableBackgroundCmds(bool enableBackgroundCmds) {
+		this->enableBackgroundCmds = enableBackgroundCmds;
+	}
 
 	bool nodeMcuDetected;
 
@@ -95,6 +123,15 @@ private:
 	const char* p1SendCmd;
     char* cmdBuffer;
 
+    char ip[16];
+    uint8_t status; // see wifi.sta.getStatus
+    NodeNotifyCallback* notifyCallback;
+
+    uint32_t lastStatusCheck;
+    uint32_t lastHeapCheck;
+
+    bool enableBackgroundCmds;
+
 };
 
 #define NODE_TIMEOUT 5000
@@ -104,5 +141,7 @@ private:
 #define LIST_AP 2
 #define NTP_SYNC 3
 #define GET_IP 4
+#define GET_STATUS 5
+#define GET_HEAP 6
 
 #endif /* NODEMCU_H_ */

@@ -18,6 +18,7 @@
 #include "Animation.h"
 #include "Menu.h"
 #include "PirHandler.h"
+#include "NodeCallbackHandler.h"
 #include "debug.h"
 #include "version.h"
 #include <malloc.h>
@@ -55,8 +56,9 @@ Animation animation(SD, panel, clock);
 
 // set time zone to 1 as default for germany
 NtpCallbackHandler ntpCallbackHandler(&clock, 1);
+NodeCallbackHandler nodeCallbackHandler(&panel);
 
-NodeMcu node(&ntpCallbackHandler);
+NodeMcu node(&ntpCallbackHandler,&nodeCallbackHandler);
 
 Menu menu(&panel, &clock, &SD, &node);
 
@@ -180,6 +182,7 @@ void selftest() {
 	seenHigh = false;
 	panel.clear();
 	node.start();
+	node.setEnableBackgroundCmds(false);
 	while(run) {
 		long now = millis();
 		node.update(now);
@@ -187,7 +190,7 @@ void selftest() {
 			update = now+1000;
 			if( node.isNodeMcuDetected()) {
 				panel.writeText("wifi ext active",0,0,15);
-				char* ip = node.getIp();
+				char* ip = node.syncRequestIp();
 				char buf[16];
 				sprintf(buf, "%-16s",ip);
 				panel.writeText(buf,0,8,16);
@@ -410,7 +413,7 @@ void loop() {
 		long now = millis();
 
 		node.update(now);
-		if( now > 20000 && node.isNodeMcuDetected() && hasNtpRequested==false ) {
+		if( now > 40000 && node.isNodeMcuDetected() && hasNtpRequested==false ) {
 			hasNtpRequested = true;
 			node.requestNtpSync(now);
 		}

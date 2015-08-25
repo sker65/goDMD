@@ -349,9 +349,11 @@ void Menu::loadOptions() {
 
 bool Menu::doNetConfig(uint32_t but) {
 	DPRINTF("netMenu: %d, event: %ld\n", netMenu, but);
+	node->setEnableBackgroundCmds(false);
 
 	if( but == BUT_EQ ) {
 		netConfig = false;
+		node->setEnableBackgroundCmds(true);
 		return false;
 	} else if( but == BUT_PLUS ) {
 		wobbleOffset = 0;
@@ -359,6 +361,7 @@ bool Menu::doNetConfig(uint32_t but) {
 		case IP:
 			netMenu = LISTAP;
 			strcpy(netOption,"Scanning WIFI");
+			strcpy(netValue,"hold on ...");
 			redrawNeeded = true;
 			update(millis());
 			aplistRead = false;
@@ -377,7 +380,7 @@ bool Menu::doNetConfig(uint32_t but) {
 	char* ip;
 	switch(netMenu) {
 	case IP:
-		ip = node->getIp();
+		ip = node->syncRequestIp();
 		strcpy(netOption,"IP-Addr.");
 		strcpy(netValue,ip);
 		redrawNeeded = true;

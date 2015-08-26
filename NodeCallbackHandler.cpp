@@ -26,10 +26,13 @@ const char* nodeStates[] = {
 
 
 void NodeCallbackHandler::notify(NodeMcu* node, int type) {
+	uint8_t status;
 	switch(type) {
 	case GET_STATUS:
-		DPRINTF("node call back: %d -> %s\n", node->getStatus(), nodeStates[node->getStatus()]);
-		panel->writeText(nodeStates[node->getStatus()],0,0,16);
+		status = node->getStatus();
+		if( status > 5 ) status = 0;
+		DPRINTF("node call back: %d -> %s\n", status, nodeStates[status]);
+		panel->writeText(nodeStates[status],0,0,16);
 		break;
 	case GET_IP:
 		panel->writeText(node->getIp(),0,8,16);

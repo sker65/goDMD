@@ -123,6 +123,7 @@ private:
 	//Button selButton;
 	bool active;
 	bool dirty; // needs reconfig
+	bool netConfigDirty;
 	bool redrawNeeded;
 
 	bool clockDirty;

@@ -102,6 +102,7 @@ Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd, NodeMcu* node ) :
 
 	active = false;
 	dirty=false;
+	netConfigDirty = false;
 	redrawNeeded=false;
 	actMenu=0;
 	actOption=0;
@@ -370,9 +371,16 @@ bool Menu::doNetConfig(uint32_t but) {
 			netMenu = PASSWD;
 			break;
 		case PASSWD:
-			node->configAp(actualSsid, netPasswd);
-			node->requestNtpSync(millis()+60000);
+			if( netConfigDirty ) {
+				netConfigDirty = false;
+				node->configAp(actualSsid, netPasswd);
+				node->requestNtpSync(millis()+60000);
+			}
 			netMenu = IP;
+			netConfig = false;
+			node->setEnableBackgroundCmds(true);
+			actMenu = 0;
+			return false;
 			break;
 		}
 	}
@@ -417,9 +425,11 @@ bool Menu::doNetConfig(uint32_t but) {
 		} else if( but == BUT_6 && strlen(netPasswd) < 64 ) {
 			*pActPasswdChar++ = passChar;
 			passCharBlink = true;
+			netConfigDirty = true;
 			*pActPasswdChar = 0;
 		} else if( but == BUT_4 ) {
 			*pActPasswdChar = 0;
+			netConfigDirty = true;
 			if( pActPasswdChar > netPasswd ) pActPasswdChar--;
 		}
 		DPRINTF("act pass: %s\n", netPasswd);

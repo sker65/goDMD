@@ -108,6 +108,7 @@ Menu::Menu(LEDMatrixPanel* panel, Clock* clock, SDClass* sd, NodeMcu* node ) :
 	actOption=0;
 	wobbleForward = true;
 	wobbleOffset = 0;
+	wifi_preset = false;
 
 	// fill index
 
@@ -315,6 +316,7 @@ void Menu::saveOption() {
 }
 
 #define OPTION_DAT "option.dat"
+#define WIFIPRESET "wifi.txt"
 
 /**
  * load menu options from sd card
@@ -345,6 +347,22 @@ void Menu::loadOptions() {
 	for(int i = 0; i<NMENU;i++) {
 		DPRINTF("Menu::loadOptions option[%d]=%d\n",i,option[i]);
 	}
+
+	// probe for wifi pre-set file
+	// re-use menuconfig vars to conserve memory
+	File wifi;
+	wifi = SD.open(WIFIPRESET, O_READ);
+	if( wifi) {
+		wifi_preset = true;
+		memset(actualSsid, 0, sizeof(actualSsid));
+		readln ( actualSsid, 128, &wifi );
+		DPRINTF("Menu::wifi preset option ssid:%s\n",actualSsid);
+		memset(netPasswd, 0, sizeof(netPasswd));
+		readln ( netPasswd, 64, &wifi );
+		DPRINTF("Menu::wifi preset option pw:%s\n",netPasswd);
+		wifi.close();
+	}
+
 }
 
 
@@ -568,5 +586,20 @@ void Menu::leaveMenu() {
 		DPRINTF("Menu::leaveMenu: open for write %s failed.", OPTION_DAT);
 	}
 	active = false;
+}
+
+char * Menu::readln(char * str, int num, File * stream) {
+	int i = 0;
+
+	strcpy(str, "");
+	while ((stream->available()) && (i < num - 1)) {
+		int ch = stream->read();
+		if (ch < 0)     // end of file
+			break;
+		if ('\n' == ch) // end of line
+			break;
+		str[i++] = ch;
+	}
+	return str;
 }
 

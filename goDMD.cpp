@@ -408,11 +408,19 @@ void loop() {
 		r = r->next;
 	}*/
 	bool hasNtpRequested = false;
+	bool wifipresetRequested = false;
 
 	while(true) {
 		long now = millis();
 
 		node.update(now);
+		if( now > 1000 && node.isNodeMcuDetected() && menu.hasWifiPreset() && wifipresetRequested == false) {
+			wifipresetRequested = true;
+			DPRINTF("wifi preset ssid: '%s'\n",menu.getPreset_ssid());
+			DPRINTF("wifi preset pw: '%s'\n",menu.getPreset_pw());
+			node.configAp( menu.getPreset_ssid(), menu.getPreset_pw());
+		}
+
 		if( now > 40000 && node.isNodeMcuDetected() && hasNtpRequested==false ) {
 			hasNtpRequested = true;
 			node.requestNtpSync(now);

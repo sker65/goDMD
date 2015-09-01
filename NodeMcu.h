@@ -43,7 +43,7 @@ public:
 
 	Result* getApList();
 
-	void configAp(const char* name, const char* password);
+	void configAp(char* name, char* password);
 
 	void requestIp();
 	char* syncRequestIp();

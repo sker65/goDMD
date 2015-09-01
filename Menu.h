@@ -95,6 +95,11 @@ public:
 	void notifyEvent(uint32_t event);
 	int lookupCode(unsigned long code);
 
+	bool hasWifiPreset() {return wifi_preset; }
+	char * getPreset_ssid() {return actualSsid; }
+	char * getPreset_pw() {return netPasswd; }
+
+
 private:
 	static const char* mm[];
 	LEDMatrixPanel* panel;
@@ -136,6 +141,10 @@ private:
 	uint8_t nOptions[NMENU];
 
 	uint8_t option[NMENU];
+
+	bool wifi_preset;
+	char  * readln  ( char * str, int num, File * stream );
+
 };
 
 #endif /* MENU_H_ */

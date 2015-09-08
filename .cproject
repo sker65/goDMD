@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
+<?fileVersion 4.0.0?>
+
+<cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
 		<cconfiguration id="cdt.managedbuild.config.gnu.cross.exe.debug.2093517594">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.cross.exe.debug.2093517594" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<macros>
-					<stringMacro name="pic32tools" type="VALUE_TEXT" value="/home/sr/.uecide/compilers/pic32-tools"/>
-					<stringMacro name="core" type="VALUE_TEXT" value="chipKit-Core"/>
+					<stringMacro name="core" type="VALUE_TEXT" value="Chipkit-Core"/>
+					<stringMacro name="pic32tools" type="VALUE_TEXT" value="/Users/md/Library/uecide/compilers/pic32-tools"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -18,11 +20,11 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.debug.2093517594" name="Debug" parent="cdt.managedbuild.config.gnu.cross.exe.debug" postannouncebuildStep="Build hex file" postbuildStep="pic32-bin2hex ${BuildArtifactFilePrefix}${BuildArtifactFileName} ; pic32-size ${BuildArtifactFilePrefix}${BuildArtifactFileName}">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.debug.2093517594" name="Debug" parent="cdt.managedbuild.config.gnu.cross.exe.debug" postannouncebuildStep="Build hex file" postbuildStep="pic32-bin2hex ${BuildArtifactFilePrefix}${BuildArtifactFileName} ; pic32-size ${BuildArtifactFilePrefix}${BuildArtifactFileName}">
 					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.2093517594." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.debug.2101041158" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.debug">
 							<option id="cdt.managedbuild.option.gnu.cross.prefix.818776021" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix" value="pic32-" valueType="string"/>
-							<option id="cdt.managedbuild.option.gnu.cross.path.743717524" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path" value="/home/sr/.uecide/compilers/pic32-tools" valueType="string"/>
+							<option id="cdt.managedbuild.option.gnu.cross.path.743717524" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path" value="/Users/md/Library/uecide/compilers/pic32-tools" valueType="string"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross.1464016604" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
 							<builder buildPath="${workspace_loc:/Blink}/Debug" id="cdt.managedbuild.builder.gnu.cross.1772303064" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.builder.gnu.cross"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1187623673" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
@@ -38,9 +40,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${core}/core/api}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.243646329" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__32MX460F256L__"/>
 									<listOptionValue builtIn="false" value="_DEBUG"/>
 								</option>
+								<option id="gnu.c.compiler.option.warnings.allwarn.1757376154" name="All warnings (-Wall)" superClass="gnu.c.compiler.option.warnings.allwarn" useByScannerDiscovery="false" value="false" valueType="boolean"/>
+								<option id="gnu.c.compiler.option.warnings.nowarn.1237905176" name="Inhibit all warnings (-w)" superClass="gnu.c.compiler.option.warnings.nowarn" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1768717844" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.615986253" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
@@ -65,20 +68,21 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libraries/Wire/utility}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.791847333" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__32MX460F256L__"/>
 									<listOptionValue builtIn="false" value="_DEBUG"/>
+									<listOptionValue builtIn="false" value="_DUMPPAYLOAD"/>
+									<listOptionValue builtIn="false" value="_DXEBUG"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2136373028" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1075446273" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool command="gcc" id="cdt.managedbuild.tool.gnu.cross.cpp.linker.875811579" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1775784560" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-O2 -Wl,--gc-sections -T /home/sr/workspace-pic32/chipKit-Core/board/chipKIT-application-32MX440F256-pinguino.ld -T /home/sr/workspace-pic32/chipKit-Core/core/api/ld/chipKIT-application-COMMON.ld -w -mprocessor=32MX440F256H -Wl,--start-group -lCore_api -Wl,--end-group -lm" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1775784560" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-O2 -Wl,--gc-sections -T /Users/md/Documents/workspace/Chipkit-Core/board/chipKIT-application-32MX440F256-pinguino.ld -T /Users/md/Documents/workspace/Chipkit-Core/core/api/ld/chipKIT-application-COMMON.ld -w -mprocessor=32MX440F256H -Wl,--start-group -lChipkit-Core -Wl,--end-group -lm" valueType="string"/>
 								<option id="gnu.cpp.link.option.nostart.441695069" name="Do not use standard start files (-nostartfiles)" superClass="gnu.cpp.link.option.nostart" value="false" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.libs.715148512" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="Core_api"/>
+									<listOptionValue builtIn="false" value="ChipKit-core"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1222415312" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/chipKit-Core/Debug}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Chipkit-Core/Debug}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.nostdlibs.685806516" name="No startup or default libs (-nostdlib)" superClass="gnu.cpp.link.option.nostdlibs" value="false" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.110154364" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
@@ -123,7 +127,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.release.504691610" name="Release" parent="cdt.managedbuild.config.gnu.cross.exe.release">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.release.504691610" name="Release" parent="cdt.managedbuild.config.gnu.cross.exe.release">
 					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.release.504691610." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.release.523830967" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.release">
 							<option id="cdt.managedbuild.option.gnu.cross.prefix.62593382" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix" value="pic32-" valueType="string"/>
@@ -178,10 +182,10 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Debug">
+		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/Blink"/>
 		</configuration>
-		<configuration configurationName="Release">
+		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/Blink"/>
 		</configuration>
 	</storageModule>

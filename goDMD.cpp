@@ -19,6 +19,7 @@
 #include "Menu.h"
 #include "PirHandler.h"
 #include "NodeCallbackHandler.h"
+#include "NodeUpload.h"
 #include "debug.h"
 #include "version.h"
 #include <malloc.h>
@@ -59,6 +60,7 @@ NtpCallbackHandler ntpCallbackHandler(&clock, 1);
 NodeCallbackHandler nodeCallbackHandler(&panel);
 
 NodeMcu node(&ntpCallbackHandler,&nodeCallbackHandler);
+NodeUpload esp8266;
 
 Menu menu(&panel, &clock, &SD, &node);
 
@@ -448,6 +450,11 @@ void loop() {
 				DPRINTF("setting rtc clock to: %ld \n", unixtime);
 				clock.adjust(&dt);
 			}
+			if( strncmp(p,"upload",6)==0) {
+				esp8266.main();
+			}
+
+
 		} // read from serial
 
 		// handle IR receiver
@@ -483,6 +490,7 @@ void loop() {
 			clock.on();
 			if( SAVECMP( now , switchToAni) ) {
 				DPRINTF("free ram %d\n", getFreeRam());
+				if (node.isNodeMcuDetected()) { DPRINTF("ip: %s\n",node.getIp());};
 				if(pir.somebodyHere()) {
 					state = showAni;
 					clock.off();

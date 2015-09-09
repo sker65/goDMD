@@ -220,7 +220,7 @@ void LEDMatrixPanel::setupTimer() {
 #ifdef __PIC32MX__
 	OpenTimer1( T1_ON | T1_SOURCE_INT | T1_PS_1_8, 1000);
 	// timer ein, internal source, prescaler 8 = 10 MHz, count 5000 => 2 Khz
-	ConfigIntTimer1( T1_INT_ON | T1_INT_PRIOR_2); \
+	ConfigIntTimer1( T1_INT_ON | T1_INT_PRIOR_1); \
 	INTEnableSystemMultiVectoredInt();
 #endif
 }
@@ -427,7 +427,7 @@ void LEDMatrixPanel::resetTimer() {
 ISR(TIMER1_OVF_vect, ISR_BLOCK) { // ISR_BLOCK important -- see notes later
 #endif
 #ifdef __PIC32MX__
-extern "C" void __ISR(_TIMER_1_VECTOR, ipl2) handlesTimer1Ints(void) {
+extern "C" void __ISR(_TIMER_1_VECTOR, ipl1) handlesTimer1Ints(void) {
 #endif
 
 	activePanel->updateScreen(); // Call refresh func for active display

@@ -130,6 +130,7 @@ Result* NodeMcu::getApList() {
 
 void NodeMcu::configAp(char* ssid, char* password) {
 	char buf[255];
+	sendCmd(setModeStation, 0);
 	sprintf(buf, "wifi.sta.config(\"%s\", \"%s\")\r\n", ssid, password);
 	sendCmd(buf, 0);
 }

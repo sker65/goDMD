@@ -1,0 +1,8 @@
+files converted with heatshrink:
+e.g.
+
+heatshrink -v -w 8 -l 4 tftpd.lua tftpd
+
+then to c source with:
+
+xxd -i tftp > tftp.c

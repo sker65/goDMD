@@ -250,6 +250,7 @@ void Menu::notifyEvent(uint32_t code) {
 	}
 	if( netConfig ) {
 		if( doNetConfig(code) ) return;
+		buttonReleased(BUTTON_MENU, 0);
 	}
 
 	uint8_t newFont;

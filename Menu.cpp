@@ -10,6 +10,7 @@
 #include <SD.h>
 #include "Menu.h"
 #include "debug.h"
+#include "macros.h"
 
 // menu texts
 const char* mmText[] = {
@@ -162,7 +163,7 @@ void Menu::update(uint32_t now) {
 		while(*pSrc!=0 && i++<16) *pDst++ = *pSrc++;
 		int l = 0;
 		char* p;
-		if( now > nextWobble ) {
+		if( SAVECMP( now, nextWobble) ) {
 			redrawNeeded = true;
 			// scroll for and back AP Name
 			switch( netMenu) {

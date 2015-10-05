@@ -19,15 +19,15 @@ public:
 	Button(uint8_t pin, uint8_t no, ClickHandler* handler );
 	virtual ~Button();
 
-	void update(long now);
+	void update(uint32_t now);
 
 protected:
 	uint8_t pin;
 	uint8_t no;
 	ClickHandler* handler;
 	bool state;
-	long lastPress;
-	long last;
+	uint32_t lastPress;
+	uint32_t last;
 };
 
 #endif /* BUTTON_H_ */

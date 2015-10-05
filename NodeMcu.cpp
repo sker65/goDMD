@@ -12,6 +12,7 @@
 
 #include "WProgram.h"
 #include "debug.h"
+#include "macros.h"
 
 NodeMcu::NodeMcu(NtpCallback* callback, NodeNotifyCallback* notifyCallback) {
 	lasttimeChecked = 0L;
@@ -308,7 +309,7 @@ void NodeMcu::update(uint32_t now) {
 		return;
 	}
 
-	if( now < nextUpdate ) return;
+	if( SAVECMP(nextUpdate,now) ) return;
 
 	nextUpdate = now + 400;
 

@@ -15,24 +15,24 @@ public:
 	PirHandler(uint8_t pin);
 	virtual ~PirHandler();
 
-	void update(long now);
+	void update(uint32_t now);
 	bool somebodyHere();
 	bool actual();
 
-	long getDelay() const {
+	uint32_t getDelay() const {
 		return delay;
 	}
 
-	void setDelay(long delay) {
+	void setDelay(uint32_t delay) {
 		this->delay = delay;
 	}
 
 protected:
 	uint8_t pin;
 	bool lastResult;
-	long lastProbe;
-	long lastTimeSomebodyWasThere;
-	long delay;
+	uint32_t lastProbe;
+	uint32_t lastTimeSomebodyWasThere;
+	uint32_t delay;
 };
 
 #endif /* PIRHANDLER_H_ */

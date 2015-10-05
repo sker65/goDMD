@@ -22,10 +22,10 @@ Button::Button(uint8_t pin, uint8_t no, ClickHandler* handler)
 Button::~Button() {
 }
 
-void Button::update(long now) {
+void Button::update(uint32_t now) {
 	int b = digitalRead(pin);
 	if( state && b==HIGH ) { // release
-		long delta = now-lastPress;
+		uint32_t delta = now-lastPress;
 		if( delta > SUPERLONGPRESS ) handler->buttonReleased(no, 2);
 		else if( delta > LONGPRESS )  handler->buttonReleased(no, 1);
 		else handler->buttonReleased(no, 0);

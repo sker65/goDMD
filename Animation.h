@@ -16,8 +16,8 @@ public:
 	Animation(SDClass& sd, LEDMatrixPanel& panel, Clock& clock);
 	virtual ~Animation();
 	boolean readNextAnimation();
-	uint16_t readNextFrame(long now, bool mask);
-	boolean update(long now);
+	uint16_t readNextFrame(uint32_t now, bool mask);
+	boolean update(uint32_t now);
 	boolean begin();
 	void setFskMode(int mode);
 

@@ -142,7 +142,7 @@ void selftest() {
 	uint32_t lastIr = 0;
 	panel.clear();
 	while(run) {
-		long now = millis();
+		uint32_t now = millis();
 		// just hand over
 		if( Serial.available() ) {
 			int in = Serial.read();
@@ -152,7 +152,7 @@ void selftest() {
 			int out = Serial1.read();
 			Serial.write(out);
 		}
-		if( update < now ) {
+		if( SAVECMP(now, update) ) {
 			update = now+1000;
 			if( pir.actual() ) panel.writeText("PIR: true   ",0,0,12);
 			else panel.writeText("PIR: false  ",0,0,12);
@@ -184,9 +184,9 @@ void selftest() {
 	node.start();
 	node.setEnableBackgroundCmds(false);
 	while(run) {
-		long now = millis();
+		uint32_t now = millis();
 		node.update(now);
-		if( update < now ) {
+		if( SAVECMP(now,update) ) {
 			update = now+1000;
 			if( node.isNodeMcuDetected()) {
 				panel.writeText("wifi ext active",0,0,15);
@@ -349,7 +349,7 @@ enum State { showTime, showDate, showAni, showMenu, freeze,
 };
 
 void loop() {
-	long now = millis();
+	uint32_t now = millis();
 
 	State state = showTime;
 
@@ -362,9 +362,9 @@ void loop() {
 
 	uint32_t ledInterval = 3000;
 
-	long switchToAni = now + clockShowTime;
+	uint32_t switchToAni = now + clockShowTime;
 
-	long nextColorChange = 0;
+	uint32_t nextColorChange = 0;
 
 	int stateCycle = 0;
 	int dateTemp = 0;
@@ -411,7 +411,7 @@ void loop() {
 	bool wifipresetRequested = false;
 
 	while(true) {
-		long now = millis();
+		uint32_t now = millis();
 
 		node.update(now);
 		if( now > 1000 && node.isNodeMcuDetected() && menu.hasWifiPreset() && wifipresetRequested == false) {

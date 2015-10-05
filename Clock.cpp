@@ -11,7 +11,7 @@
 #include "debug.h"
 #include <SD.h>
 #include "utility/bitprims.h"
-
+#include "macros.h"
 
 #define maxBrightness 2
 //#define clockPlane 2
@@ -132,13 +132,13 @@ void Clock::adjust(DateTime* dt) {
  * updates the clock cyclic
  * @param now actual time in millis
  */
-void Clock::update(long now) {
-	if (nextRtcSync < now) {
+void Clock::update(uint32_t now) {
+	if (SAVECMP(now, nextRtcSync)) {
 		nextRtcSync = now + 10L * 60L * 1000L;  // 10 min
 		n = rtc->now();
 		lastRtcSync = millis();
 	}
-	if ( nextClockRefresh < now) {
+	if ( SAVECMP(now, nextClockRefresh ) ) {
 		nextClockRefresh = now + 500;
 		switch (mode) {
 		case TIME:
@@ -149,7 +149,7 @@ void Clock::update(long now) {
 			writeDate(now);
 			break;
 		case TEMP:
-			if( nextTempSync < now ) {
+			if( SAVECMP(now,nextTempSync) ) {
 				sensor->requestTemperatures();
 				actTemp= sensor->getTempCByIndex(0);
 				nextTempSync = now + 40 * 1000L; // every 40 sec
@@ -221,7 +221,7 @@ void Clock::writeTemp(float actTemp, byte* buffer) {
 	}
 }
 
-void Clock::writeDate(long now, byte* buffer) {
+void Clock::writeDate(uint32_t now, byte* buffer) {
 	if (active) {
 		DateTime dateTime(n.unixtime() + (now - lastRtcSync) / 1000);
 		char date[10];
@@ -231,7 +231,7 @@ void Clock::writeDate(long now, byte* buffer) {
 	}
 }
 
-void Clock::formatTime(char* time, long now) {
+void Clock::formatTime(char* time, uint32_t now) {
 	DateTime dateTime(n.unixtime() + ( (now - lastRtcSync) / 1000 ));
 	boolean tick = !blinkingTick ? true : (now % 1000) > 500;
 	int hour = dateTime.hour();
@@ -248,7 +248,7 @@ void Clock::formatTime(char* time, long now) {
 	}
 }
 
-void Clock::writeTimeIntern(long now, byte* buffer, _BS_alu alumode, boolean useMask) {
+void Clock::writeTimeIntern(uint32_t now, byte* buffer, _BS_alu alumode, boolean useMask) {
 	char time[10];
 	formatTime(time,now);
 	switch(font) {
@@ -261,7 +261,7 @@ void Clock::writeTimeIntern(long now, byte* buffer, _BS_alu alumode, boolean use
 	}
 }
 
-void Clock::writeTime(long now, byte* buffer) {
+void Clock::writeTime(uint32_t now, byte* buffer) {
 	if (active) {
 		writeTimeIntern(now,buffer);
 	}

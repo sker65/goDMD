@@ -32,22 +32,22 @@ public:
 	enum Font { Big, Small };
 
 	Clock(LEDMatrixPanel& panel, RTC_DS1307& rtc, SDClass* sd, DallasTemperature* sensor);
-	void update(long now);
+	void update(uint32_t now);
 	virtual ~Clock();
 	void on();
 	// writes actual time (optinally with seconds)
-	void writeTime(long now, byte* buffer = NULL);
-	void writeTimeIntern(long now, byte* buffer=NULL,
+	void writeTime(uint32_t now, byte* buffer = NULL);
+	void writeTimeIntern(uint32_t now, byte* buffer=NULL,
 			_BS_alu mode = _BS_alu_copy, boolean useMask = false );
 	// writes date
-	void writeDate(long now, byte* buffer = NULL);
+	void writeDate(uint32_t now, byte* buffer = NULL);
 	// writes temperature
 	void writeTemp(float actTemp, byte* buffer = NULL);
 	// switch clock off
 	void writeText(const char* text, int x, int y, Digit* charset, byte* buffer = NULL,
 			_BS_alu mode = _BS_alu_copy, boolean useMask=false);
 
-	void formatTime(char* buffer, long now);
+	void formatTime(char* buffer, uint32_t now);
 
 	void off();
 
@@ -118,11 +118,11 @@ protected:
 	SDClass* sd;
 	LEDMatrixPanel& panel;
 	DallasTemperature* sensor;
-	long nextClockRefresh;
-	long nextRtcSync;
-	long nextTempSync;
+	uint32_t nextClockRefresh;
+	uint32_t nextRtcSync;
+	uint32_t nextTempSync;
 	float actTemp;
-	long lastRtcSync;
+	uint32_t lastRtcSync;
 	uint8_t brightness;
 	DateTime n;
 	boolean active;

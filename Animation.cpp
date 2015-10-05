@@ -146,7 +146,7 @@ void Animation::skipAllFrames(File& f) {
  * if animation stream contains a mask frame then clock is rendered
  * and clock is masked out.
  */
-uint16_t Animation::readNextFrame(long now, bool maskClock) {
+uint16_t Animation::readNextFrame(uint32_t now, bool maskClock) {
 	uint16_t buflen = ani.read()*256+ani.read();
 	uint16_t delay = ani.read()*256+ani.read();
 	byte numberOfPlanes = ani.read();
@@ -209,7 +209,7 @@ uint16_t Animation::readNextFrame(long now, bool maskClock) {
 	return delay;
 }
 
-boolean Animation::update(long now) {
+boolean Animation::update(uint32_t now) {
 	if( SAVECMP( now , nextAnimationUpdate) ) {
 		if( hold ) {
 			hold = false;

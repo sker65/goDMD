@@ -20,7 +20,7 @@ bool PirHandler::actual() {
 	return digitalRead(pin)==HIGH;
 }
 
-void PirHandler::update(long now) {
+void PirHandler::update(uint32_t now) {
 	lastResult = digitalRead(pin);  // true / high means active -> somebody is here
 	lastProbe = now;
 	if( lastResult ) {

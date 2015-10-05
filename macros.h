@@ -15,9 +15,8 @@
 /*
  * defines an overflow save compare:
  * if now > when -> true
- * if not now must have had an overflow, so decrement when by ULONG_MAX
- * and compare again
+ * simply use difference
  */
-#define SAVECMP( now, when ) ( now > when )
+#define SAVECMP( now, when ) ( now - when > 0 )
 
 #endif /* MACROS_H_ */

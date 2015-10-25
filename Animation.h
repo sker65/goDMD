@@ -58,7 +58,7 @@ protected:
 	uint32_t* aniIndex;
 	char aniname[40];
 
-	long nextAnimationUpdate;
+	uint32_t nextAnimationUpdate;
 	boolean clearAfterAni;
 	boolean hold;
 	boolean clockInFront;

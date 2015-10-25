@@ -69,6 +69,8 @@ void TimeUtil::setUTCtime(uint32_t sec) {
 	uint8_t leap400;
 	uint8_t month;
 
+	sec -= 946684800; // start 01/01/2000 00:00:00
+
 	this->second = sec % 60;
 	sec /= 60;
 	this->minute = sec % 60;

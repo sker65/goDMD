@@ -11,12 +11,13 @@
 // day in millis
 #define DAY 86400000
 
+#include <stdint.h>
 
 /*
  * defines an overflow save compare:
  * if now > when -> true
  * simply use difference
  */
-#define SAVECMP( now, when ) ( now - when > 0 )
+#define SAVECMP( now, when ) ( (long)now - (long)when > 0 )
 
 #endif /* MACROS_H_ */

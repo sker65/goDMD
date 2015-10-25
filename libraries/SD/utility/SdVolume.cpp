@@ -228,28 +228,45 @@ uint8_t SdVolume::freeChain(uint32_t cluster) {
  */
 uint8_t SdVolume::init(Sd2Card* dev, uint8_t part) {
   uint32_t volumeStartBlock = 0;
+  DPRINTF("try to init volume on partition %d\n",part);
   sdCard_ = dev;
   // if part == 0 assume super floppy with FAT boot sector in block zero
   // if part > 0 assume mbr volume with partition table
   if (part) {
-    if (part > 4)return false;
-    if (!cacheRawBlock(volumeStartBlock, CACHE_FOR_READ)) return false;
+    if (part > 4) return false;
+    if (!cacheRawBlock(volumeStartBlock, CACHE_FOR_READ)){
+    	DPRINTF("cannot read block %d, error\n",volumeStartBlock);
+    	return false;
+    }
     part_t* p = &cacheBuffer_.mbr.part[part-1];
+
+    DPRINTF("part info: boot: %d, totalSecs: %d, firstSec: %d\n",
+    		p->boot & 0X7F,p->totalSectors,p->firstSector);
+
     if ((p->boot & 0X7F) !=0  ||
       p->totalSectors < 100 ||
       p->firstSector == 0) {
       // not a valid partition
+    	DPRINTF2("not a valid partition\n");
       return false;
     }
     volumeStartBlock = p->firstSector;
   }
-  if (!cacheRawBlock(volumeStartBlock, CACHE_FOR_READ)) return false;
+  if (!cacheRawBlock(volumeStartBlock, CACHE_FOR_READ)) {
+	  DPRINTF("2 cannot read block %d, error\n",volumeStartBlock);
+	  return false;
+  }
   bpb_t* bpb = &cacheBuffer_.fbs.bpb;
+
+  DPRINTF("bpb info: bytesPerSector: %d, fatCount: %d, reservedSectorCount: %d, sectorsPerCluster: %d\n",
+		  bpb->bytesPerSector,bpb->fatCount,bpb->reservedSectorCount,bpb->sectorsPerCluster);
+
   if (bpb->bytesPerSector != 512 ||
     bpb->fatCount == 0 ||
     bpb->reservedSectorCount == 0 ||
     bpb->sectorsPerCluster == 0) {
        // not valid FAT volume
+	  DPRINTF2("not valid FAT volume\n");
       return false;
   }
   fatCount_ = bpb->fatCount;
@@ -259,7 +276,10 @@ uint8_t SdVolume::init(Sd2Card* dev, uint8_t part) {
   clusterSizeShift_ = 0;
   while (blocksPerCluster_ != (1 << clusterSizeShift_)) {
     // error if not power of 2
-    if (clusterSizeShift_++ > 7) return false;
+    if (clusterSizeShift_++ > 7) {
+    	DPRINTF2("error if not power of 2\n");
+    	return false;
+    }
   }
   blocksPerFat_ = bpb->sectorsPerFat16 ?
                     bpb->sectorsPerFat16 : bpb->sectorsPerFat32;
@@ -293,5 +313,6 @@ uint8_t SdVolume::init(Sd2Card* dev, uint8_t part) {
     rootDirStart_ = bpb->fat32RootCluster;
     fatType_ = 32;
   }
+  DPRINTF2("FAT FS init ok\n");
   return true;
 }

@@ -24,6 +24,7 @@
 
 #include <WProgram.h>
 #include "Sd2Card.h"
+#include "../../debug.h"
 
 /*	SPIxCON
 */
@@ -204,9 +205,10 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
     _cs = chipSelectPin;
 
     if (_spi) {
+    	DPRINTF2("using spi\n");
         _spi->begin();
-    _spi->setTransferSize(DSPI_8BIT);
-	_spi->setSpeed(125000UL);
+        _spi->setTransferSize(DSPI_8BIT);
+        _spi->setSpeed(125000UL);
     } else {
         pinMode(_mosi, OUTPUT);
         pinMode(_miso, INPUT);
@@ -233,20 +235,24 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
     while ((status_ = cardCommand(CMD0, 0)) != R1_IDLE_STATE) {
         if (((uint16_t)millis() - t0) > SD_INIT_TIMEOUT) {
             error(SD_CARD_ERROR_CMD0);
+            DPRINTF2("timeout while cmd0\n");
             goto fail;
         }
     }
     // check SD version
     if ((cardCommand(CMD8, 0x1AA) & R1_ILLEGAL_COMMAND)) {
         type(SD_CARD_TYPE_SD1);
+        DPRINTF2("using SD_CARD_TYPE_SD1\n");
     } else {
         // only need last byte of r7 response
         for (uint8_t i = 0; i < 4; i++) status_ = spiRec();
         if (status_ != 0XAA) {
             error(SD_CARD_ERROR_CMD8);
+            DPRINTF2("CMD8 not accepted\n");
             goto fail;
         }
         type(SD_CARD_TYPE_SD2);
+        DPRINTF2("using SD_CARD_TYPE_SD2\n");
     }
     // initialize card and send host supports SDHC if SD2
     arg = type() == SD_CARD_TYPE_SD2 ? 0X40000000 : 0;
@@ -255,6 +261,7 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
         // check for timeout
         if (((uint16_t)millis() - t0) > SD_INIT_TIMEOUT) {
             error(SD_CARD_ERROR_ACMD41);
+            DPRINTF2("timeout while ACMD41\n");
             goto fail;
         }
     }
@@ -262,9 +269,13 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
     if (type() == SD_CARD_TYPE_SD2) {
         if (cardCommand(CMD58, 0)) {
             error(SD_CARD_ERROR_CMD58);
+            DPRINTF2("timeout while CMD58\n");
             goto fail;
         }
-        if ((spiRec() & 0XC0) == 0XC0) type(SD_CARD_TYPE_SDHC);
+        if ((spiRec() & 0XC0) == 0XC0) {
+        	type(SD_CARD_TYPE_SDHC);
+        	DPRINTF2("using SD_CARD_TYPE_SDHC\n");
+        }
         // discard rest of ocr - contains allowed voltage range
         for (uint8_t i = 0; i < 3; i++) spiRec();
     }
@@ -272,10 +283,12 @@ uint8_t Sd2Card::init(uint8_t sckRateID, uint8_t chipSelectPin) {
 
     if (_spi) {
 		_spi->setSpeed(10000000UL); // changed sr was too fast for the olimex micro
+		DPRINTF2("setting speed to 10MHz\n");
 		//_spi->setSpeed(20000000UL);
     } else {
-   	 setSckRate(sckRateID);
+    	setSckRate(sckRateID);
     }
+    DPRINTF2("return true\n");
     return true;
 
 fail:

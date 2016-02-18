@@ -17,6 +17,7 @@
 NodeMcu::NodeMcu(NtpCallback* callback, NodeNotifyCallback* notifyCallback) {
 	lasttimeChecked = 0L;
 	nodeMcuDetected = false;
+	udpServer = false;
 	lastResult = NULL;
 	lastCh = 0;
 	readState = READING_UNKNOWN;
@@ -74,7 +75,7 @@ const char* ntp =
 			"ustamp=0,\n"
 			"tz=0,\n"
 			"udptimer=2,\n"
-			"udptimeout=1000,\n"
+			"udptimeout=10000,\n"
 			"ntpserver=\"130.149.17.8\",\n"
 			"sk=nil,\n"
 			"sync=function(self,callback)\n"
@@ -109,6 +110,20 @@ const char* ntp =
 			"	self.second = self.ustamp % 60\n"
 			"end,\n"
 		"})\n";
+
+const char* udpsrv =
+		"s=net.createServer(net.UDP)\n"
+		"s:on(\"receive\",function(s,c) print() print(\"** \", c) end)\n"
+		"s:listen(5683)"
+		;
+
+/*
+
+srv=net.createServer(net.UDP)
+srv:on("receive", function(srv, pl) tmr.wdclr() uart.write(0,pl) end)
+srv:listen(5683) uart.on("data",0,function(data)srv:send(data)end, 0)
+// add check to end uart.on( .... )
+ */
 
 const char* getApListCmd =
 		"wifi.sta.getap(function(t) print() for k,v in pairs(t) do print(\"# \"..k) end print(\"##\") end)\r\n";
@@ -309,6 +324,10 @@ void NodeMcu::update(uint32_t now) {
 		return;
 	}
 
+	if( callState == IDLE && Serial1.available()) {
+		readResponse();
+	}
+
 	if( SAVECMP(nextUpdate,now) ) return;
 
 	nextUpdate = now + 400;
@@ -321,7 +340,13 @@ void NodeMcu::update(uint32_t now) {
 		}
 
 		if( callState == IDLE && nodeMcuDetected && now > lastStatusCheck ) {
-			requestStatus();
+			if( status == 5 && !udpServer ) {
+				udpServer = true;
+//				DPRINTF2("creating server object");
+//				sendCmd(udpsrv,0);
+			} else {
+				requestStatus();
+			}
 			lastStatusCheck = now + 60000;
 		}
 

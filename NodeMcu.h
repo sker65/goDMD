@@ -116,6 +116,7 @@ private:
 	uint32_t timeoutOccured;
 
 	bool ntpObjectSet;
+	bool udpServer;
 	NtpCallback* callback;
 	bool serialDeviceDetected;
 

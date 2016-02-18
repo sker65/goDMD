@@ -23,6 +23,7 @@
 #include "version.h"
 #include <malloc.h>
 #include "macros.h"
+#include "utility/TimeUtil.h"
 
 #define DS18B20_PIN CON2_1
 
@@ -369,6 +370,8 @@ void loop() {
 	int stateCycle = 0;
 	int dateTemp = 0;
 
+	int dstCheck = 0;
+
 	/*int next = millis();
 
 	while( true ) {
@@ -409,6 +412,10 @@ void loop() {
 	}*/
 	bool hasNtpRequested = false;
 	bool wifipresetRequested = false;
+
+	TimeUtil timeUtil;
+	timeUtil.setUTCtime(clock.getUnixTime());
+	bool actDst = timeUtil.isDaylightSaving();
 
 	while(true) {
 		uint32_t now = millis();
@@ -473,6 +480,30 @@ void loop() {
 		if( menu.isActive() ) {
 			clock.off();
 			state = showMenu;
+		}
+
+
+		// do an dst check every minute, regardless
+		if( SAVECMP(now, dstCheck)) {
+			dstCheck = now + 60000;
+			uint32_t unixTime = clock.getUnixTime();
+			timeUtil.setUTCtime(unixTime);
+			bool dstNew = timeUtil.isDaylightSaving();
+			if( dstNew != actDst ) {
+				// make dst adjust
+				if( dstNew ) {
+					// switch to summer time
+					DPRINTF2("switching to summer time");
+					DateTime dt(unixTime + 3600);
+					clock.adjust(&dt);
+				} else {
+					// switch back to winter time
+					DPRINTF2("switching to winter time");
+					DateTime dt(unixTime - 3600);
+					clock.adjust(&dt);
+				}
+				actDst = dstNew;
+			}
 		}
 
 		// ani -> time -> ani

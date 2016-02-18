@@ -128,6 +128,10 @@ void Clock::adjust(DateTime* dt) {
 	nextRtcSync = millis(); // force sync
 }
 
+uint32_t Clock::getUnixTime() {
+	return n.unixtime() + ( (millis() - lastRtcSync) / 1000 );
+}
+
 /**
  * updates the clock cyclic
  * @param now actual time in millis

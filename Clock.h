@@ -51,6 +51,8 @@ public:
 
 	void off();
 
+	uint32_t getUnixTime();
+
 	boolean begin();
 
 	boolean isClockOn() {

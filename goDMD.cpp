@@ -235,7 +235,7 @@ void selftest() {
 
 void setup() {
 	Serial.begin(9600);
-#ifdef _DXEBUG
+#ifdef _DxEBUG
 	for( int i =0; i<5;i++) {
 		DPRINTF("wait %lu \n", millis());
 		delay(1000);
@@ -414,6 +414,7 @@ void loop() {
 	bool wifipresetRequested = false;
 
 	TimeUtil timeUtil;
+	clock.update(millis());
 	timeUtil.setUTCtime(clock.getUnixTime());
 	bool actDst = timeUtil.isDaylightSaving();
 

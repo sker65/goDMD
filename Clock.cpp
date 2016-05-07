@@ -12,16 +12,17 @@
 #include <SD.h>
 #include "utility/bitprims.h"
 #include "macros.h"
+#include "DHT.h"
 
 #define maxBrightness 2
 //#define clockPlane 2
 
 
 Clock::Clock(LEDMatrixPanel& p, RTC_DS1307& rtc, SDClass* sd,
-		DallasTemperature* sensor) :
+		DallasTemperature* sensor, DHT* dht) :
 		panel(p), nextClockRefresh(0), nextRtcSync(0), nextTempSync(0),
 		sd(sd), sensor(sensor),
-		actTemp(0.0) {
+		actTemp(0.0), dht(dht) {
 	this->rtc = &rtc;
 	brightness = 0;
 	active = false;
@@ -132,6 +133,7 @@ uint32_t Clock::getUnixTime() {
 	return n.unixtime() + ( (millis() - lastRtcSync) / 1000 );
 }
 
+
 /**
  * updates the clock cyclic
  * @param now actual time in millis
@@ -152,13 +154,25 @@ void Clock::update(uint32_t now) {
 		case DATE:
 			writeDate(now);
 			break;
+		case HUMI:
 		case TEMP:
 			if( SAVECMP(now,nextTempSync) ) {
-				sensor->requestTemperatures();
-				actTemp= sensor->getTempCByIndex(0);
+				if( dht->isConnected ) {
+					if( dht->readDHT() == DHT::DHT_OK ) {
+						actTemp = dht->temperature / 10.0;
+						actHumi = dht->humidity;
+					}
+				} else {
+					sensor->requestTemperatures();
+					actTemp= sensor->getTempCByIndex(0);
+				}
 				nextTempSync = now + 40 * 1000L; // every 40 sec
 			}
-			writeTemp(actTemp);
+			if( dht->isConnected && mode == HUMI ) {
+				writeHumi(actHumi);
+			} else {
+				writeTemp(actTemp);
+			}
 			break;
 		}
 		// by forcing updates max bright is reached faster
@@ -215,6 +229,14 @@ void Clock::writeText(const char* text, int x, int y, Digit* charset,
 	}
 }
 
+void Clock::writeHumi(int actHumi, byte* buffer) {
+	if (active) {
+		char buf[7];
+		sprintf(buf, "%03d p",actTemp+(float)tempOffset);
+		DPRINTF("showing humi: %s\n",buf);
+		writeText(buf,20,0,digits,buffer);
+	}
+}
 
 void Clock::writeTemp(float actTemp, byte* buffer) {
 	if (active) {
@@ -224,6 +246,7 @@ void Clock::writeTemp(float actTemp, byte* buffer) {
 		writeText(buf,20,0,digits,buffer);
 	}
 }
+
 
 void Clock::writeDate(uint32_t now, byte* buffer) {
 	if (active) {

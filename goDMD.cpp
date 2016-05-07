@@ -24,6 +24,7 @@
 #include <malloc.h>
 #include "macros.h"
 #include "utility/TimeUtil.h"
+#include "DHT.h"
 
 #define DS18B20_PIN CON2_1
 
@@ -44,6 +45,9 @@
 
 #define RECV_PIN CON1_14
 #define PIR_PIN CON1_15
+#define DHT_PIN CON1_16
+
+DHT dht(DHT_PIN);
 
 LEDMatrixPanel panel( A,B,C,D, CLK, LAT, OE, WIDTH, HEIGHT, PLANES,
 		COLORCHANNELS, false);
@@ -52,7 +56,7 @@ OneWire oneWire(DS18B20_PIN);          // OneWire Referenz setzen
 DallasTemperature sensor(&oneWire);   // DS18B20 initialisieren
 RTC_DS1307 rtc;
 
-Clock clock(panel, rtc, &SD, &sensor);
+Clock clock(panel, rtc, &SD, &sensor, &dht);
 Animation animation(SD, panel, clock);
 
 // set time zone to 1 as default for germany
@@ -250,6 +254,8 @@ void setup() {
 
 	node.begin();
 
+
+
 	// start ir receiver
 	irrecv.enableIRIn();
 
@@ -346,13 +352,16 @@ void testScreen() {
 
 // states
 enum State { showTime, showDate, showAni, showMenu, freeze,
-	pirNobodyThere, showTemp
+	pirNobodyThere, showTemp, showHumi
 };
 
 void loop() {
 	uint32_t now = millis();
 
 	State state = showTime;
+
+	DHT::ReturnCode rc = dht.readDHT();
+	bool dhtPresent = ( rc == DHT::DHT_OK );
 
 	//testScreen();
 
@@ -417,6 +426,7 @@ void loop() {
 	clock.update(millis());
 	timeUtil.setUTCtime(clock.getUnixTime());
 	bool actDst = timeUtil.isDaylightSaving();
+	bool toggleHumi = false;
 
 	while(true) {
 		uint32_t now = millis();
@@ -554,6 +564,16 @@ void loop() {
 			clock.update(now);
 			break;
 
+		case showHumi:
+			clock.setMode(Clock::HUMI);
+			clock.on();
+			if( SAVECMP( now , switchToAni ) ) {
+				state = showAni;
+				clock.off();
+			}
+			clock.update(now);
+			break;
+
 		case showDate:
 			clock.setMode(Clock::DATE);
 			clock.on();
@@ -572,8 +592,12 @@ void loop() {
 					dateTemp++;
 					// check want to show next temp ot date or simply time
 					if( tempMode>0 && dateTemp % 3 == 0 ) {
-						state=showTemp;
-						clock.setMode(Clock::TEMP);
+						toggleHumi = ~toggleHumi;
+						if( toggleHumi && dhtPresent ) {
+							state=showHumi;
+						} else {
+							state=showTemp;
+						}
 						switchToAni = now + 3000 + tempMode * 1500;
 					} else {
 						if( dateMode > 0 ) {

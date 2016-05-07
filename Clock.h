@@ -17,6 +17,7 @@ class LEDMatrixPanel;
 class SDClass;
 class File;
 class DallasTemperature;
+class DHT;
 
 struct Digit {
 	uint8_t width;
@@ -28,10 +29,10 @@ struct Digit {
 
 class Clock {
 public:
-	enum Mode { TIME, TIMESEC, DATE, TEMP };
+	enum Mode { TIME, TIMESEC, DATE, TEMP, HUMI };
 	enum Font { Big, Small };
 
-	Clock(LEDMatrixPanel& panel, RTC_DS1307& rtc, SDClass* sd, DallasTemperature* sensor);
+	Clock(LEDMatrixPanel& panel, RTC_DS1307& rtc, SDClass* sd, DallasTemperature* sensor, DHT* dht);
 	void update(uint32_t now);
 	virtual ~Clock();
 	void on();
@@ -43,6 +44,7 @@ public:
 	void writeDate(uint32_t now, byte* buffer = NULL);
 	// writes temperature
 	void writeTemp(float actTemp, byte* buffer = NULL);
+	void writeHumi(int actHumi, byte* buffer = NULL);
 	// switch clock off
 	void writeText(const char* text, int x, int y, Digit* charset, byte* buffer = NULL,
 			_BS_alu mode = _BS_alu_copy, boolean useMask=false);
@@ -120,10 +122,13 @@ protected:
 	SDClass* sd;
 	LEDMatrixPanel& panel;
 	DallasTemperature* sensor;
+	DHT* dht;
 	uint32_t nextClockRefresh;
 	uint32_t nextRtcSync;
 	uint32_t nextTempSync;
 	float actTemp;
+	int actHumi;
+
 	uint32_t lastRtcSync;
 	uint8_t brightness;
 	DateTime n;
